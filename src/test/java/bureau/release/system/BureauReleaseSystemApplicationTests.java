@@ -1,4 +1,4 @@
-package org.example.bureaureleasesystem;
+package bureau.release.system;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

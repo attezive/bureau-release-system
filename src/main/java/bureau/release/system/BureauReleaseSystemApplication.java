@@ -1,4 +1,4 @@
-package org.example.bureaureleasesystem;
+package bureau.release.system;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
