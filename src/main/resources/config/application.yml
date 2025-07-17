@@ -1,0 +1,5 @@
+harbor:
+  registry:
+    source: localhost:88/library/testrepo
+    ecr-username: admin
+    ecr-password: Harbor12345
