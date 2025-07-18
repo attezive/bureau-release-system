@@ -1,4 +1,9 @@
 package bureau.release.system.service.dto;
 
-public record Blob() {
+import java.nio.file.Path;
+
+public record Blob(
+        String digest,
+        Path path
+) {
 }
