@@ -39,7 +39,7 @@ public class OciArtifactDownloader implements ArtifactDownloader {
                 )
         ) {
             return new Manifest(
-                    parseManifest(response.body().asInputStream().readAllBytes())
+                    parseManifest(response.body().asInputStream().readAllBytes()), reference
             );
         } catch (IOException e) {
             log.error("Failed to load manifest content: {}", e.getMessage());
@@ -53,7 +53,7 @@ public class OciArtifactDownloader implements ArtifactDownloader {
         try (Response response = ociClient.getBlob(repositoryName, digest, getBasicAuthHeader());
              InputStream is = response.body().asInputStream()) {
             Files.copy(is, path, StandardCopyOption.REPLACE_EXISTING);
-            blob = new Blob(digest, path);
+            blob = new Blob(path.getFileName().toString(), digest, path);
         } catch (IOException e) {
             log.error("Failed to load blob content: {}", e.getMessage());
         }

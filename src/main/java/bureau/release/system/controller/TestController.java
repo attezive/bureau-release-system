@@ -1,13 +1,12 @@
 package bureau.release.system.controller;
 
 import bureau.release.system.config.OciRegistryProperties;
+import bureau.release.system.service.dto.Blob;
 import bureau.release.system.service.dto.Manifest;
 import bureau.release.system.service.impl.OciArtifactDownloader;
+import bureau.release.system.service.impl.OciArtifactUploader;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -18,6 +17,7 @@ import java.nio.file.Paths;
 @RequiredArgsConstructor
 public class TestController {
     private final OciArtifactDownloader artifactDownloader;
+    private final OciArtifactUploader artifactUploader;
     private final OciRegistryProperties properties;
 
     @GetMapping("/{tId}")
@@ -35,5 +35,15 @@ public class TestController {
     public String getBlobs(@PathVariable String tId) {
         Manifest manifest =  artifactDownloader.loadManifest(properties.name(), tId);
         return artifactDownloader.loadBlobs(properties.name(), manifest, "").toString();
+    }
+
+    @GetMapping("/b/u/s")
+    public String startUpload(){
+        String status = artifactUploader.uploadBlob(
+                properties.name(),
+                new Blob("hrbr.txt",
+                        "be072c96381f32a974dac9e53cffc0b914778ef954f799e7e24d730d464476dc",
+                        Paths.get("hrbr.txt")));
+        return status;
     }
 }
