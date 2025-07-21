@@ -8,6 +8,10 @@ oci:
       - application/vnd.oci.image.index.v1+json
       - application/vnd.oci.image.manifest.v1+json
 feign:
+  httpclient:
+    enabled: true
+    maxConnections: 200
+    maxConnectionsPerRoute: 50
   client:
     config:
       oci-registry-client:
