@@ -1,10 +1,7 @@
 package bureau.release.system.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/firmware")
@@ -12,12 +9,19 @@ import org.springframework.web.bind.annotation.RestController;
 public class FirmwareController {
 
     @GetMapping
-    public String getAllFirmware() {
-        return "getAllFirmware";
+    public String getFirmware(@RequestParam(required = false, defaultValue = "0") int limit,
+                              @RequestParam(required = false, defaultValue = "0") int offset) {
+        return "";
     }
 
-    @GetMapping("/{firmwareId}")
-    public String getFirmware(@PathVariable String firmwareId) {
-        return "getFirmware = " + firmwareId;
+    @GetMapping("/{firmwareId}/versions")
+    public String getFirmwareVersions(@PathVariable int firmwareId) {
+        // TODO Что есть версия прошивки? У нас под каждую прошивку свой репозиторий внутри проекта, где ее версии?
+        return "";
+    }
+
+    @PostMapping
+    public String createFirmware(@RequestBody byte[] firmwareData) {
+        return "";
     }
 }
