@@ -40,7 +40,7 @@ CREATE TABLE "firmware_type"
 
 CREATE TABLE "release_status"
 (
-    "id"   integer NOT NULL,
+    "id"   serial NOT NULL,
     "name" bigint  NOT NULL,
     PRIMARY KEY ("id")
 );
@@ -59,7 +59,7 @@ CREATE TABLE "firmware"
 
 CREATE TABLE "hardware"
 (
-    "id"   bigint       NOT NULL,
+    "id"   bigserial       NOT NULL,
     "name" varchar(100) NOT NULL,
     PRIMARY KEY ("id")
 );
