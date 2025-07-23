@@ -1,11 +1,12 @@
 package bureau.release.system.controller;
 
 import bureau.release.system.service.dto.MissionDto;
-import bureau.release.system.service.impl.MissionHardwareService;
 import bureau.release.system.service.impl.MissionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -13,29 +14,24 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class MissionsController {
     private final MissionService missionService;
-    private final MissionHardwareService missionHardwareService;
 
     @GetMapping
-    public String getMissions() {
+    public List<MissionDto> getMissions() {
         log.debug("getMissions");
-        return missionService.getAllMissions().toString();
+        return missionService.getAllMissions();
     }
 
     @GetMapping("/{missionId}")
-    public String getMission(@PathVariable int missionId) {
+    public MissionDto getMission(@PathVariable int missionId) {
         log.debug("getMission {}", missionId);
-        return missionService.getMissionById(missionId).toString();
+        return missionService.getMissionById(missionId);
     }
 
     @PostMapping
-    public String createMission(@RequestBody MissionDto missionData) {
+    public MissionDto createMission(@RequestBody MissionDto missionData) {
         MissionDto mission = missionService.createMission(missionData);
         log.debug("Create Mission: {}", mission);
-        for (long hardwareId : missionData.getHardwareIds()) {
-            missionHardwareService.addHardwareToMission(mission.getId(), hardwareId);
-        }
-        mission.setHardwareIds(missionData.getHardwareIds());
-        return mission.toString();
+        return mission;
     }
 
     @DeleteMapping("/{missionId}")

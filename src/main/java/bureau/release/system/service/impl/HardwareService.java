@@ -2,14 +2,16 @@ package bureau.release.system.service.impl;
 
 import bureau.release.system.dal.HardwareDao;
 import bureau.release.system.model.Hardware;
+import bureau.release.system.model.Mission;
 import bureau.release.system.service.dto.HardwareDto;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -18,11 +20,13 @@ public class HardwareService {
     private final HardwareDao hardwareDao;
     private final MissionHardwareService missionHardwareService;
 
-    public HardwareDto createHardware(HardwareDto hardwareDto){
-        return new HardwareDto(hardwareDao.save(hardwareDto.toEntity()));
+    @Transactional
+    public HardwareDto createHardware(HardwareDto hardwareDto) {
+        return new HardwareDto(hardwareDao.save(Hardware.builder().name(hardwareDto.getName()).build()));
     }
 
-    public List<HardwareDto> getAllHardware(){
+    @Transactional(readOnly = true)
+    public List<HardwareDto> getAllHardware() {
         List<HardwareDto> hardwareDtoList = new ArrayList<>();
         hardwareDao.findAll()
                 .forEach(hardware -> hardwareDtoList
@@ -34,18 +38,22 @@ public class HardwareService {
         return hardwareDtoList;
     }
 
-    public List<HardwareDto> getHardwareByMission(int missionId){
-        return missionHardwareService.getHardwareDtoListForMission(missionId);
-    }
-
-    public Optional<HardwareDto> getHardwareById(long hardwareId){
-        Hardware hardware = hardwareDao.findById(hardwareId).orElse(null);
-        if (hardware != null) {
-            return Optional.of(
-                    new HardwareDto(hardware, missionHardwareService.getMissionsIdsForHardware(hardware.getId()))
+    @Transactional(readOnly = true)
+    public List<HardwareDto> getHardwareByMissionId(int missionId) {
+        List<HardwareDto> hardwareDtoList = new ArrayList<>();
+        for (Hardware hardware : missionHardwareService.getHardwareEntityForMission(missionId)) {
+            hardwareDtoList.add(new HardwareDto(
+                    hardware,
+                    hardware.getMissions().stream().map(Mission::getId).collect(Collectors.toSet()))
             );
         }
-        return Optional.empty();
+        return hardwareDtoList;
     }
 
+    @Transactional(readOnly = true)
+    public HardwareDto getHardwareById(long hardwareId) {
+        Hardware hardware = hardwareDao.findById(hardwareId)
+                .orElseThrow(() -> new EntityNotFoundException("Hardware not found"));
+        return new HardwareDto(hardware, missionHardwareService.getMissionsIdsForHardware(hardware.getId()));
+    }
 }
