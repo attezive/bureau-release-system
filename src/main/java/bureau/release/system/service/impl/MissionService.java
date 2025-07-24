@@ -22,8 +22,11 @@ public class MissionService {
 
     @Transactional
     public MissionDto createMission(MissionDto missionDto) throws EntityNotFoundException {
-        Mission mission = Mission.builder().name(missionDto.getName()).build();
-        mission.setHardwareSet(missionHardwareService.createHardwareSet(missionDto));
+        Mission mission = Mission
+                .builder()
+                .name(missionDto.getName())
+                .hardwareSet(missionHardwareService.createHardwareSet(missionDto))
+                .build();
         return new MissionDto(missionDao.save(mission), missionDto.getHardwareIds());
     }
 

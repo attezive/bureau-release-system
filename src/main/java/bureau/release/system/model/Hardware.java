@@ -23,4 +23,12 @@ public class Hardware {
 
     @ManyToMany(mappedBy = "hardwareSet")
     private Set<Mission> missions = new HashSet<>();
+
+    @ManyToMany
+    @JoinTable(
+            name = "firmware_to_hardware",
+            joinColumns = @JoinColumn(name = "hardware_id"),
+            inverseJoinColumns = @JoinColumn(name = "firmware_id")
+    )
+    private Set<Firmware> firmwareSet = new HashSet<>();
 }

@@ -53,14 +53,14 @@ public class MissionHardwareService {
 
     @Transactional(readOnly = true)
     public Set<Hardware> createHardwareSet(MissionDto missionDto) throws EntityNotFoundException {
-        Set<Hardware> hardwareList = new HashSet<>();
+        Set<Hardware> hardwareSet = new HashSet<>();
         Mission mission = Mission.builder().name(missionDto.getName()).build();
         for (Long hardwareId : missionDto.getHardwareIds()) {
             Hardware hardware = hardwareDao.findById(hardwareId)
                     .orElseThrow(() -> new EntityNotFoundException("Hardware not found"));
-            hardwareList.add(hardware);
+            hardwareSet.add(hardware);
             hardware.getMissions().add(mission);
         }
-        return hardwareList;
+        return hardwareSet;
     }
 }

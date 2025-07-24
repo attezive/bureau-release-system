@@ -1,18 +1,38 @@
 package bureau.release.system.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Entity
+@Table(name = "firmware")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Firmware {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    @Column(nullable = false, length = 100)
+    private String name;
 
-    public Long getId() {
-        return id;
-    }
+    @Column(name = "oci_name", nullable = false, length = 100)
+    private String ociName;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "type", nullable = false)
+    private FirmwareType type;
+
+    @ManyToMany(mappedBy = "firmwareSet")
+    private Set<Hardware> hardwareSet =  new HashSet<>();
+
+    @OneToMany(mappedBy = "firmware", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ReleaseContent> releaseContents = new ArrayList<>();
 }

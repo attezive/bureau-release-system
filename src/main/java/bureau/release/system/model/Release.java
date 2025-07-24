@@ -1,18 +1,40 @@
 package bureau.release.system.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
+@Table(name = "releases")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Release {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    @Column(nullable = false, length = 100)
+    private String name;
 
-    public Long getId() {
-        return id;
-    }
+    @Column(nullable = false)
+    private LocalDate releaseDate;
+
+    @Column(name = "oci_name", length = 100)
+    private String ociName;
+
+    @Column(length = 100)
+    private String reference;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "status", nullable = false)
+    private ReleaseStatus status;
+
+    @OneToMany(mappedBy = "release", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ReleaseContent> releaseContents = new ArrayList<>();
 }

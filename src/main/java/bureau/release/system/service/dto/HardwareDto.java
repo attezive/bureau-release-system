@@ -27,8 +27,16 @@ public class HardwareDto {
         this.missionsIds = missionIds;
     }
 
-    public HardwareDto(String name, Set<Long> firmwareIds) {
+    public HardwareDto(long id, String name, Set<Long> firmwareIds) {
+        this.id = id;
         this.name = name;
+        this.firmwareIds = firmwareIds;
+    }
+
+    public HardwareDto(Hardware hardware, Set<Integer> missionIds, Set<Long> firmwareIds) {
+        this.id = hardware.getId();
+        this.name = hardware.getName();
+        this.missionsIds = missionIds;
         this.firmwareIds = firmwareIds;
     }
 }

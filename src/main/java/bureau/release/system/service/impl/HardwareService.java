@@ -1,6 +1,7 @@
 package bureau.release.system.service.impl;
 
 import bureau.release.system.dal.HardwareDao;
+import bureau.release.system.model.Firmware;
 import bureau.release.system.model.Hardware;
 import bureau.release.system.model.Mission;
 import bureau.release.system.service.dto.HardwareDto;
@@ -19,10 +20,17 @@ import java.util.stream.Collectors;
 public class HardwareService {
     private final HardwareDao hardwareDao;
     private final MissionHardwareService missionHardwareService;
+    private final HardwareFirmwareService hardwareFirmwareService;
 
     @Transactional
     public HardwareDto createHardware(HardwareDto hardwareDto) {
-        return new HardwareDto(hardwareDao.save(Hardware.builder().name(hardwareDto.getName()).build()));
+        Hardware hardware = Hardware
+                .builder()
+                .name(hardwareDto.getName())
+                .firmwareSet(hardwareFirmwareService.createFirmwareSet(hardwareDto))
+                .build();
+        hardware = hardwareDao.save(hardware);
+        return new HardwareDto(hardware.getId(), hardware.getName(), hardwareDto.getFirmwareIds());
     }
 
     @Transactional(readOnly = true)
@@ -31,10 +39,11 @@ public class HardwareService {
         hardwareDao.findAll()
                 .forEach(hardware -> hardwareDtoList
                         .add(new HardwareDto(
-                                hardware,
-                                missionHardwareService.getMissionsIdsForHardware(hardware.getId()))
-                        )
-                );
+                                        hardware,
+                                        missionHardwareService.getMissionsIdsForHardware(hardware.getId()),
+                                        hardwareFirmwareService.getFirmwareIdsForHardware(hardware.getId())
+                                )
+                        ));
         return hardwareDtoList;
     }
 
@@ -44,8 +53,9 @@ public class HardwareService {
         for (Hardware hardware : missionHardwareService.getHardwareEntityForMission(missionId)) {
             hardwareDtoList.add(new HardwareDto(
                     hardware,
-                    hardware.getMissions().stream().map(Mission::getId).collect(Collectors.toSet()))
-            );
+                    hardware.getMissions().stream().map(Mission::getId).collect(Collectors.toSet()),
+                    hardware.getFirmwareSet().stream().map(Firmware::getId).collect(Collectors.toSet())
+            ));
         }
         return hardwareDtoList;
     }
@@ -54,6 +64,10 @@ public class HardwareService {
     public HardwareDto getHardwareById(long hardwareId) {
         Hardware hardware = hardwareDao.findById(hardwareId)
                 .orElseThrow(() -> new EntityNotFoundException("Hardware not found"));
-        return new HardwareDto(hardware, missionHardwareService.getMissionsIdsForHardware(hardware.getId()));
+        return new HardwareDto(
+                hardware,
+                missionHardwareService.getMissionsIdsForHardware(hardware.getId()),
+                hardwareFirmwareService.getFirmwareIdsForHardware(hardware.getId())
+        );
     }
 }

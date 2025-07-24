@@ -35,11 +35,7 @@ public class MissionsController {
     }
 
     @DeleteMapping("/{missionId}")
-    public String deleteMission(@PathVariable int missionId, @RequestParam(required = false) String key) {
-        //TODO Add key-token generation and check it
-        if (key == null) {
-            return "Token For Accept Mission Delete";
-        }
+    public String deleteMission(@PathVariable int missionId) {
         log.debug("Delete Mission: {}", missionId);
         missionService.deleteMission(missionId);
         return "Ok";
