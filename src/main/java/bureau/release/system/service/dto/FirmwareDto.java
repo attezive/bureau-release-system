@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
 import java.util.Set;
 
 @NoArgsConstructor
@@ -17,7 +16,6 @@ public class FirmwareDto {
     private String type;
     private String ociName;
     private Set<Long> hardwareIds;
-    private List<Long> referenceIds;
 
     public FirmwareDto(Firmware firmware) {
         this.id = firmware.getId();

@@ -10,7 +10,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ReleaseContent {
+public class FirmwareVersion {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
@@ -24,6 +24,6 @@ public class ReleaseContent {
     @JoinColumn(name = "release_id", nullable = false)
     private Release release;
 
-    @Column(nullable = false, length = 100)
-    private String reference;
+    @Column(name = "firmware_version", nullable = false, length = 100)
+    private String firmwareVersion;
 }

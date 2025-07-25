@@ -1,6 +1,7 @@
 package bureau.release.system.controller;
 
 import bureau.release.system.model.ReleaseStatus;
+import bureau.release.system.service.dto.ReleaseDto;
 import bureau.release.system.service.impl.ReleaseService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,20 +17,24 @@ public class ReleasesController {
     private final ReleaseService releaseService;
 
     @GetMapping
-    public String getReleases(@RequestParam(required = false, defaultValue = "0") int limit,
-                              @RequestParam(required = false, defaultValue = "0") int offset,
-                              @RequestParam(required = false) String mission) {
-        return "1";
+    public List<ReleaseDto> getReleases(@RequestParam(required = false, defaultValue = "0") int page,
+                              @RequestParam(required = false, defaultValue = "1") int size,
+                              @RequestParam(required = false) Integer missionId) {
+        log.debug("getReleases");
+        return releaseService.getAllReleases(page, size, missionId);
     }
 
     @GetMapping("/{releaseId}")
-    public String getReleaseById(@PathVariable int releaseId) {
-        return "";
+    public ReleaseDto getReleaseById(@PathVariable int releaseId) {
+        log.debug("getReleaseById {}", releaseId);
+        return releaseService.getReleaseById(releaseId);
     }
 
     @PostMapping
-    public String createRelease(@RequestBody byte[] releaseData) {
-        return "";
+    public ReleaseDto createRelease(@RequestBody ReleaseDto releaseData) {
+        ReleaseDto release = releaseService.createRelease(releaseData);
+        log.debug("createRelease {}", release);
+        return release;
     }
 
     @GetMapping("/statuses")

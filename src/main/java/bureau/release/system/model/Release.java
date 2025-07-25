@@ -22,7 +22,7 @@ public class Release {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(nullable = false)
+    @Column(name = "date", nullable = false, columnDefinition = "DATE")
     private LocalDate releaseDate;
 
     @Column(name = "oci_name", length = 100)
@@ -35,6 +35,10 @@ public class Release {
     @JoinColumn(name = "status", nullable = false)
     private ReleaseStatus status;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "mission", nullable = false)
+    private Mission mission;
+
     @OneToMany(mappedBy = "release", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ReleaseContent> releaseContents = new ArrayList<>();
+    private List<FirmwareVersion> firmwareVersions = new ArrayList<>();
 }

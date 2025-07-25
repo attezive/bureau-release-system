@@ -1,5 +1,6 @@
 package bureau.release.system.controller;
 
+import bureau.release.system.service.dto.ErrorDto;
 import bureau.release.system.service.dto.MissionDto;
 import bureau.release.system.service.impl.MissionService;
 import lombok.RequiredArgsConstructor;
@@ -35,9 +36,9 @@ public class MissionsController {
     }
 
     @DeleteMapping("/{missionId}")
-    public String deleteMission(@PathVariable int missionId) {
+    public ErrorDto deleteMission(@PathVariable int missionId) {
         log.debug("Delete Mission: {}", missionId);
         missionService.deleteMission(missionId);
-        return "Ok";
+        return new ErrorDto("Successfully deleted");
     }
 }

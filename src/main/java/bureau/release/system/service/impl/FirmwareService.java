@@ -3,6 +3,7 @@ package bureau.release.system.service.impl;
 import bureau.release.system.dal.FirmwareDao;
 import bureau.release.system.dal.FirmwareTypeDao;
 import bureau.release.system.model.Firmware;
+import bureau.release.system.model.Hardware;
 import bureau.release.system.service.dto.FirmwareDto;
 import bureau.release.system.service.dto.FirmwareTypeDto;
 import jakarta.persistence.EntityNotFoundException;
@@ -15,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -22,7 +25,6 @@ import java.util.List;
 public class FirmwareService {
     private final FirmwareDao firmwareDao;
     private final FirmwareTypeDao firmwareTypeDao;
-    private final HardwareFirmwareService hardwareFirmwareService;
 
     @Transactional
     public FirmwareDto createFirmware(FirmwareDto firmwareDto) {
@@ -30,7 +32,8 @@ public class FirmwareService {
                 .builder()
                 .name(firmwareDto.getName())
                 .ociName(firmwareDto.getOciName())
-                .type(firmwareTypeDao.findById(findTypeId(firmwareDto.getType())).get())
+                .type(firmwareTypeDao.findByName(firmwareDto.getType())
+                        .orElseThrow(() -> new EntityNotFoundException("Type not found")))
                 .build();
         return new FirmwareDto(firmwareDao.save(firmware));
     }
@@ -39,7 +42,10 @@ public class FirmwareService {
     public FirmwareDto getFirmwareById(long id) {
         Firmware firmware = firmwareDao.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Firmware not found"));
-        return new FirmwareDto(firmware, hardwareFirmwareService.getHardwareIdsForFirmware(firmware.getId()));
+        return new FirmwareDto(
+                firmware,
+                getHardwareIds(firmware)
+        );
     }
 
     @Transactional(readOnly = true)
@@ -49,21 +55,18 @@ public class FirmwareService {
         firmwareDao.findAll(pageable).forEach(firmware -> firmwareDtoList
                 .add(new FirmwareDto(
                         firmware,
-                        hardwareFirmwareService.getHardwareIdsForFirmware(firmware.getId())
+                        getHardwareIds(firmware)
                 )
             ));
         return  firmwareDtoList;
     }
 
     @Transactional(readOnly = true)
-    public int findTypeId(String typeName) {
-        return firmwareTypeDao
-                .findIdByName(typeName)
-                .orElseThrow(() -> new EntityNotFoundException("Type not found"));
-    }
-
-    @Transactional(readOnly = true)
     public List<FirmwareTypeDto> getFirmwareTypes() {
         return firmwareTypeDao.findAll().stream().map(FirmwareTypeDto::new).toList();
+    }
+
+    private Set<Long> getHardwareIds(Firmware firmware) {
+        return firmware.getHardwareSet().stream().map(Hardware::getId).collect(Collectors.toSet());
     }
 }

@@ -8,6 +8,6 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 public interface FirmwareTypeDao extends JpaRepository<FirmwareType, Integer> {
-    @Query("SELECT ft.id FROM FirmwareType ft WHERE ft.name = :name")
-    Optional<Integer> findIdByName(@Param("name") String name);
+    @Query("SELECT ft FROM FirmwareType ft WHERE ft.name = :name")
+    Optional<FirmwareType> findByName(@Param("name") String name);
 }

@@ -3,9 +3,7 @@ package bureau.release.system.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -32,7 +30,4 @@ public class Firmware {
 
     @ManyToMany(mappedBy = "firmwareSet")
     private Set<Hardware> hardwareSet =  new HashSet<>();
-
-    @OneToMany(mappedBy = "firmware", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ReleaseContent> releaseContents = new ArrayList<>();
 }

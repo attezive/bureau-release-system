@@ -17,7 +17,7 @@ public class FirmwareController {
     private final FirmwareService firmwareService;
 
     @GetMapping
-    public List<FirmwareDto> getFirmware(@RequestParam(required = false, defaultValue = "1") int page,
+    public List<FirmwareDto> getFirmware(@RequestParam(required = false, defaultValue = "0") int page,
                                          @RequestParam(required = false, defaultValue = "1") int size) {
         log.debug("getFirmware");
         return firmwareService.getAllFirmware(page, size);

@@ -13,7 +13,6 @@ import java.util.List;
 public class FirmwareTypeDto {
     private int id;
     private String name;
-    private List<Long> firmwareIds;
 
     public FirmwareTypeDto(FirmwareType firmwareType) {
         this.id = firmwareType.getId();
@@ -23,6 +22,5 @@ public class FirmwareTypeDto {
     public FirmwareTypeDto(FirmwareType firmwareType, List<Long> firmwareIds) {
         this.id = firmwareType.getId();
         this.name = firmwareType.getName();
-        this.firmwareIds = firmwareIds;
     }
 }

@@ -1,5 +1,6 @@
 package bureau.release.system.service.impl;
 
+import bureau.release.system.dal.HardwareDao;
 import bureau.release.system.model.Hardware;
 import bureau.release.system.model.Mission;
 import bureau.release.system.dal.MissionDao;
@@ -18,14 +19,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MissionService {
     private final MissionDao missionDao;
-    private final MissionHardwareService missionHardwareService;
+    private final HardwareDao hardwareDao;
 
     @Transactional
     public MissionDto createMission(MissionDto missionDto) throws EntityNotFoundException {
         Mission mission = Mission
                 .builder()
                 .name(missionDto.getName())
-                .hardwareSet(missionHardwareService.createHardwareSet(missionDto))
+                .hardwareSet(createHardwareSet(missionDto))
                 .build();
         return new MissionDto(missionDao.save(mission), missionDto.getHardwareIds());
     }
@@ -37,7 +38,7 @@ public class MissionService {
                 .forEach(mission -> missionDtoList
                         .add(new MissionDto(
                                 mission,
-                                missionHardwareService.getHardwareIdsForMission(mission.getId())
+                                getHardwareIds(mission)
                         )));
         return missionDtoList;
     }
@@ -48,12 +49,29 @@ public class MissionService {
                 .orElseThrow(() -> new EntityNotFoundException("Mission not found"));
         return new MissionDto(
                 mission,
-                mission.getHardwareSet().stream().map(Hardware::getId).collect(Collectors.toSet())
+                getHardwareIds(mission)
         );
     }
 
     @Transactional
     public void deleteMission(int missionId) {
         missionDao.deleteById(missionId);
+    }
+
+    @Transactional(readOnly = true)
+    public Set<Hardware> createHardwareSet(MissionDto missionDto) throws EntityNotFoundException {
+        Set<Hardware> hardwareSet = new HashSet<>();
+        Mission mission = Mission.builder().name(missionDto.getName()).build();
+        for (Long hardwareId : missionDto.getHardwareIds()) {
+            Hardware hardware = hardwareDao.findById(hardwareId)
+                    .orElseThrow(() -> new EntityNotFoundException("Hardware not found"));
+            hardwareSet.add(hardware);
+            hardware.getMissions().add(mission);
+        }
+        return hardwareSet;
+    }
+
+    private Set<Long> getHardwareIds(Mission mission) {
+        return mission.getHardwareSet().stream().map(Hardware::getId).collect(Collectors.toSet());
     }
 }
