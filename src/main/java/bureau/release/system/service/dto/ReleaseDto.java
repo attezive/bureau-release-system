@@ -17,7 +17,7 @@ public class ReleaseDto {
     private LocalDate releaseDate;
     private String ociName;
     private String reference;
-    private String status;
+    private ReleaseStatusDto status;
     private Long originId;
     private int missionId;
     private List<FirmwareVersionDto> firmwareVersions;
@@ -27,7 +27,7 @@ public class ReleaseDto {
         this.name = release.getName();
         this.releaseDate = release.getReleaseDate();
         this.ociName = release.getOciName();
-        this.status = release.getStatus().getName();
+        this.status = ReleaseStatusDto.valueOf(release.getStatus().getName());
         this.missionId = release.getMission().getId();
     }
 
@@ -36,7 +36,7 @@ public class ReleaseDto {
         this.name = release.getName();
         this.releaseDate = release.getReleaseDate();
         this.ociName = release.getOciName();
-        this.status = release.getStatus().getName();
+        this.status = ReleaseStatusDto.valueOf(release.getStatus().getName());
         this.missionId = release.getMission().getId();
         this.firmwareVersions = firmwareVersions;
     }

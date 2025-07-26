@@ -4,6 +4,7 @@ import bureau.release.system.dal.*;
 import bureau.release.system.model.*;
 import bureau.release.system.service.dto.FirmwareVersionDto;
 import bureau.release.system.service.dto.ReleaseDto;
+import bureau.release.system.service.dto.ReleaseStatusDto;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,8 +34,7 @@ public class ReleaseService {
         Release release = Release
                 .builder()
                 .name(releaseDto.getName())
-                //TODO реализовать статусы
-                .status(releaseStatusDao.findById(1)
+                .status(releaseStatusDao.findByName(ReleaseStatusDto.CREATED.name())
                         .orElseThrow(() -> new EntityNotFoundException("Release Status not found")))
                 .ociName(releaseDto.getOciName())
                 .mission(missionDao.findById(releaseDto.getMissionId())
@@ -69,7 +69,7 @@ public class ReleaseService {
             firmwareVersions.add(new FirmwareVersionDto(firmwareVersion));
         }
 
-        if (releaseDto.getOriginId() != 0) {
+        if (releaseDto.getOriginId() != null) {
             setupByOrigin(releaseDto, release, firmwareIds,  firmwareVersions);
         }
 
