@@ -1,5 +1,6 @@
 package bureau.release.system.controller;
 
+import bureau.release.system.service.dto.ClientNotFoundException;
 import bureau.release.system.service.dto.ErrorDto;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -17,5 +18,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorDto> handleIllegalArgumentException(IllegalArgumentException exception) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorDto(exception.getMessage()));
+    }
+
+    @ExceptionHandler(ClientNotFoundException.class)
+    public ResponseEntity<ErrorDto> handleNotFoundException(ClientNotFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorDto(exception.getMessage()));
     }
 }

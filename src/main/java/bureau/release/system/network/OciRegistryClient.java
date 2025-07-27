@@ -1,15 +1,19 @@
 package bureau.release.system.network;
 
 import bureau.release.system.config.OciRegistryConfig;
+import bureau.release.system.service.dto.Artifact;
 import feign.Headers;
 import feign.Response;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @FeignClient(
         name = "oci-registry-client",
-        url = "${oci.registry.url}" + "/v2",
+        url = "${oci.registry.url}" + "/api/v2.0",
         configuration = OciRegistryConfig.class
 )
 public interface OciRegistryClient {
@@ -63,4 +67,11 @@ public interface OciRegistryClient {
                             @RequestHeader("Authorization") String authHeader,
                             @RequestHeader("Cookie") String cookie,
                             @RequestHeader("X-Harbor-Csrf-Token") String csrfToken);
+
+    @GetMapping(
+            value = "/projects/{project_name}/repositories/{repository_name}/artifacts",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<List<Artifact>> getArtifacts(@PathVariable("project_name") String projectName,
+                                                @PathVariable("repository_name") String repositoryName,
+                                                @RequestHeader("Authorization") String authHeader);
 }

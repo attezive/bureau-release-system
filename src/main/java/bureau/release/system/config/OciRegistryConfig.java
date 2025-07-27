@@ -1,8 +1,9 @@
 package bureau.release.system.config;
 
+import bureau.release.system.service.dto.ClientNotFoundException;
 import feign.Client;
+import feign.Request;
 import feign.RequestInterceptor;
-import feign.codec.Decoder;
 import feign.codec.ErrorDecoder;
 import feign.httpclient.ApacheHttpClient;
 import lombok.RequiredArgsConstructor;
@@ -43,15 +44,11 @@ public class OciRegistryConfig {
     }
 
     @Bean
-    public Decoder feignDecoder() {
-        return (response, type) -> response;
-    }
-
-    @Bean
     public ErrorDecoder errorDecoder() {
         return (methodKey, response) -> {
             if (response.status() == 404) {
-                return new RuntimeException("Manifest not found");
+                Request request = response.request();
+                return new ClientNotFoundException("Not founded: " + request.httpMethod() + " " + request.url());
             }
             return new RuntimeException("OCI registry error");
         };

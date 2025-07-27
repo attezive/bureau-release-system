@@ -3,13 +3,16 @@ package bureau.release.system.service.impl;
 import bureau.release.system.config.OciRegistryProperties;
 import bureau.release.system.network.OciRegistryClient;
 import bureau.release.system.service.ArtifactDownloader;
+import bureau.release.system.service.dto.Artifact;
 import bureau.release.system.service.dto.Blob;
+import bureau.release.system.service.dto.ClientNotFoundException;
 import bureau.release.system.service.dto.Manifest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -71,6 +74,21 @@ public class OciArtifactDownloader implements ArtifactDownloader {
             blobs.add(loadBlob(repositoryName, digest, Paths.get(path)));
         }
         return blobs;
+    }
+
+    @Override
+    public List<Artifact> getArtifacts(String harborProjectName, String harborRepositoryName) {
+        ResponseEntity<List<Artifact>> response = ociClient
+                .getArtifacts(
+                        harborProjectName,
+                        harborRepositoryName,
+                        getBasicAuthHeader()
+                );
+        List<Artifact> artifacts = response.getBody();
+        if (artifacts == null || artifacts.isEmpty()) {
+            throw new ClientNotFoundException("No repository artifacts found: " + harborProjectName + "/" + harborRepositoryName);
+        }
+        return artifacts;
     }
 
     private JsonNode parseManifest(byte[] data) throws IOException {

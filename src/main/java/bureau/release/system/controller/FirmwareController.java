@@ -1,5 +1,7 @@
 package bureau.release.system.controller;
 
+import bureau.release.system.service.ArtifactDownloader;
+import bureau.release.system.service.dto.Artifact;
 import bureau.release.system.service.dto.FirmwareDto;
 import bureau.release.system.service.dto.FirmwareTypeDto;
 import bureau.release.system.service.impl.FirmwareService;
@@ -15,6 +17,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FirmwareController {
     private final FirmwareService firmwareService;
+    private final ArtifactDownloader artifactDownloader;
 
     @GetMapping
     public List<FirmwareDto> getFirmware(@RequestParam(required = false, defaultValue = "0") int page,
@@ -30,9 +33,11 @@ public class FirmwareController {
     }
 
     @GetMapping("/{firmwareId}/versions")
-    public FirmwareDto getFirmwareVersions(@PathVariable int firmwareId) {
-        //TODO реализовать выгрузку версий (референсов/тегов) с Harbor
-        return new FirmwareDto();
+    public List<Artifact> getFirmwareVersions(@PathVariable int firmwareId) {
+        FirmwareDto firmware = firmwareService.getFirmwareById(firmwareId);
+        String[] repositoryLink = firmware.getOciName().split("/");
+        log.debug("getFirmwareVersions {}", firmware.getOciName());
+        return artifactDownloader.getArtifacts(repositoryLink[0], repositoryLink[1]);
     }
 
     @PostMapping
