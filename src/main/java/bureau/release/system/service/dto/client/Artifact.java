@@ -1,4 +1,4 @@
-package bureau.release.system.service.dto;
+package bureau.release.system.service.dto.client;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.AllArgsConstructor;

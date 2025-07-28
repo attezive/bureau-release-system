@@ -1,15 +1,14 @@
 package bureau.release.system.service;
 
-import bureau.release.system.service.dto.Artifact;
-import bureau.release.system.service.dto.Blob;
-import bureau.release.system.service.dto.Manifest;
+import bureau.release.system.service.dto.ReleaseDto;
+import bureau.release.system.service.dto.client.Artifact;
+import bureau.release.system.service.dto.client.Manifest;
 
-import java.nio.file.Path;
+import java.io.OutputStream;
 import java.util.List;
 
 public interface ArtifactDownloader {
-    Manifest loadManifest(String repositoryName, String reference);
-    Blob loadBlob(String repositoryName, String digest, Path path);
-    List<Blob> loadBlobs(String repositoryName, Manifest manifest, String pathPrefix);
+    Manifest getManifest(String repositoryName, String reference);
+    void loadReleaseContent(ReleaseDto release, OutputStream outputStream);
     List<Artifact> getArtifacts(String harborProjectName, String harborRepositoryName);
 }

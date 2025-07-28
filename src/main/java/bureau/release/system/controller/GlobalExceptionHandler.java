@@ -1,6 +1,6 @@
 package bureau.release.system.controller;
 
-import bureau.release.system.service.dto.ClientNotFoundException;
+import bureau.release.system.exception.ClientNotFoundException;
 import bureau.release.system.service.dto.ErrorDto;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;

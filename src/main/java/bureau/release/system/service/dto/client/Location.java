@@ -1,4 +1,4 @@
-package bureau.release.system.service.dto;
+package bureau.release.system.service.dto.client;
 
 public record Location(String uuid, String state) {
     public static Location parse(String locationUrl) {

@@ -1,4 +1,4 @@
-package bureau.release.system.service.dto;
+package bureau.release.system.exception;
 
 public class ClientNotFoundException extends RuntimeException {
     public ClientNotFoundException(String message) {

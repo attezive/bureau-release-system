@@ -1,7 +1,7 @@
 package bureau.release.system.controller;
 
 import bureau.release.system.service.ArtifactDownloader;
-import bureau.release.system.service.dto.Artifact;
+import bureau.release.system.service.dto.client.Artifact;
 import bureau.release.system.service.dto.FirmwareDto;
 import bureau.release.system.service.dto.FirmwareTypeDto;
 import bureau.release.system.service.impl.FirmwareService;

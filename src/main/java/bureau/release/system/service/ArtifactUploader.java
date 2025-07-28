@@ -1,7 +1,7 @@
 package bureau.release.system.service;
 
-import bureau.release.system.service.dto.Blob;
-import bureau.release.system.service.dto.Manifest;
+import bureau.release.system.service.dto.client.Blob;
+import bureau.release.system.service.dto.client.Manifest;
 
 import java.util.List;
 

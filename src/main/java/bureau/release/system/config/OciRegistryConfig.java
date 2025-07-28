@@ -1,6 +1,6 @@
 package bureau.release.system.config;
 
-import bureau.release.system.service.dto.ClientNotFoundException;
+import bureau.release.system.exception.ClientNotFoundException;
 import feign.Client;
 import feign.Request;
 import feign.RequestInterceptor;
