@@ -10,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.OutputStream;
 import java.util.List;
 
 @FeignClient(
@@ -31,18 +32,18 @@ public interface OciRegistryClient {
                      @PathVariable("digest") String blobDigest,
                      @RequestHeader("Authorization") String authHeader);
 
-    @PostMapping(value = "/{name}/blobs/uploads/", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @PostMapping(value = "/v2/{name}/blobs/uploads/", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     Response uploadBlobInit(@PathVariable("name") String repositoryName,
                             @RequestHeader("Authorization") String authHeader,
                             @RequestHeader("Cookie") String cookie,
                             @RequestHeader("X-Harbor-Csrf-Token") String csrfToken);
 
-    @PatchMapping(value = "/{name}/blobs/uploads/{uuid}", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @PatchMapping(value = "/v2/{name}/blobs/uploads/{uuid}", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     @Headers({"Content-Type: application/octet-stream"})
     Response uploadBlobChunk(@PathVariable("name") String repositoryName,
                              @PathVariable("uuid") String uploadUuid,
                              @RequestParam("_state") String state,
-                             @RequestBody byte[] blobData,
+                             @RequestBody OutputStream blobData,
                              @RequestHeader("Authorization") String authHeader,
                              @RequestHeader("Cookie") String cookie,
                              @RequestHeader("X-Harbor-Csrf-Token") String csrfToken);

@@ -17,7 +17,7 @@ public class HardwareController {
 
     @GetMapping
     public List<HardwareDto> getHardware(@RequestParam(required = false) Integer missionId) {
-        log.debug("getHardware");
+        log.info("getHardware");
         if (missionId == null) {
             return hardwareService.getAllHardware();
         }
@@ -26,14 +26,14 @@ public class HardwareController {
 
     @GetMapping("/{hardwareId}")
     public HardwareDto getHardwareById(@PathVariable int hardwareId) {
-        log.debug("getHardwareById {}", hardwareId);
+        log.info("getHardwareById {}", hardwareId);
         return hardwareService.getHardwareById(hardwareId);
     }
 
     @PostMapping
     public HardwareDto createHardware(@RequestBody HardwareDto hardwareData) {
         HardwareDto hardware = hardwareService.createHardware(hardwareData);
-        log.debug("createHardware {}", hardware);
+        log.info("createHardware {}", hardware);
         return hardware;
     }
 }

@@ -26,19 +26,19 @@ public class ReleasesController {
     public List<ReleaseDto> getReleases(@RequestParam(required = false, defaultValue = "0") int page,
                               @RequestParam(required = false, defaultValue = "1") int size,
                               @RequestParam(required = false) Integer missionId) {
-        log.debug("getReleases");
+        log.info("getReleases");
         return releaseService.getAllReleases(page, size, missionId);
     }
 
     @GetMapping("/{releaseId}")
     public ReleaseDto getReleaseById(@PathVariable int releaseId) {
-        log.debug("getReleaseById {}", releaseId);
+        log.info("getReleaseById {}", releaseId);
         return releaseService.getReleaseById(releaseId);
     }
 
     @GetMapping(value = "/{releaseId}/tar", produces = "application/tar")
     public ResponseEntity<StreamingResponseBody> getTar(@PathVariable int releaseId) {
-        log.debug("getTar {}", releaseId);
+        log.info("getTar {}", releaseId);
         ReleaseDto releaseDto = releaseService.getReleaseById(releaseId);
         StreamingResponseBody responseBody = outputStream ->
                 artifactDownloader.loadReleaseContent(releaseDto, outputStream);
@@ -52,14 +52,14 @@ public class ReleasesController {
 
     @GetMapping("/statuses")
     public List<ReleaseStatus> getReleaseStatuses() {
-        log.debug("getReleaseStatuses");
+        log.info("getReleaseStatuses");
         return releaseService.getReleaseStatuses();
     }
 
     @PostMapping
     public ReleaseDto createRelease(@RequestBody ReleaseDto releaseData) {
         ReleaseDto release = releaseService.createRelease(releaseData);
-        log.debug("createRelease {}", release);
+        log.info("createRelease {}", release);
         return release;
     }
 }

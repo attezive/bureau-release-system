@@ -4,6 +4,7 @@ import bureau.release.system.exception.ClientNotFoundException;
 import feign.Client;
 import feign.Request;
 import feign.RequestInterceptor;
+import feign.codec.Encoder;
 import feign.codec.ErrorDecoder;
 import feign.httpclient.ApacheHttpClient;
 import lombok.RequiredArgsConstructor;
@@ -52,5 +53,10 @@ public class OciRegistryConfig {
             }
             return new RuntimeException("OCI registry error");
         };
+    }
+
+    @Bean
+    public Encoder feignEncoder() {
+        return new OutputStreamEncoder();
     }
 }

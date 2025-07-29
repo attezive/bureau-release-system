@@ -65,24 +65,20 @@ public class OciArtifactDownloader implements ArtifactDownloader {
         for (FirmwareVersionDto firmwareVersionDto : firmwareVersionDtoList) {
             Firmware firmware = firmwareDao.findById(firmwareVersionDto.getFirmwareId())
                     .orElseThrow(() -> new EntityNotFoundException("Firmware not found"));
-            createDirectories(tarOut, firmware.getName(), createdDirectories);
 
-            Manifest manifest = getManifest(firmware.getOciName(), firmwareVersionDto.getFirmwareVersion());
-            for (ManifestLayer manifestLayer : manifest.getLayers()) {
-                addFileToTar(tarOut, manifestLayer, firmware.getName(), firmware.getOciName());
-            }
-        }
-    }
+            String dirEntryName = firmware.getName();
+            if (createdDirectories.contains(dirEntryName)) continue;
 
-    private void createDirectories(TarArchiveOutputStream tarOut,
-                                   String dirEntryName,
-                                   Set<String> createdDirectories) throws IOException {
-        if (!createdDirectories.contains(dirEntryName)) {
             TarArchiveEntry dirEntry = new TarArchiveEntry(dirEntryName+"/");
             dirEntry.setMode(TarArchiveEntry.DEFAULT_DIR_MODE);
             tarOut.putArchiveEntry(dirEntry);
             tarOut.closeArchiveEntry();
             createdDirectories.add(dirEntryName);
+
+            Manifest manifest = getManifest(firmware.getOciName(), firmwareVersionDto.getFirmwareVersion());
+            for (ManifestLayer manifestLayer : manifest.getLayers()) {
+                addFileToTar(tarOut, manifestLayer, firmware.getName(), firmware.getOciName());
+            }
         }
     }
 

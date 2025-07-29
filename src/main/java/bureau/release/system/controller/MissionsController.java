@@ -18,26 +18,26 @@ public class MissionsController {
 
     @GetMapping
     public List<MissionDto> getMissions() {
-        log.debug("getMissions");
+        log.info("getMissions");
         return missionService.getAllMissions();
     }
 
     @GetMapping("/{missionId}")
     public MissionDto getMission(@PathVariable int missionId) {
-        log.debug("getMission {}", missionId);
+        log.info("getMission {}", missionId);
         return missionService.getMissionById(missionId);
     }
 
     @PostMapping
     public MissionDto createMission(@RequestBody MissionDto missionData) {
         MissionDto mission = missionService.createMission(missionData);
-        log.debug("Create Mission: {}", mission);
+        log.info("Create Mission: {}", mission);
         return mission;
     }
 
     @DeleteMapping("/{missionId}")
     public ErrorDto deleteMission(@PathVariable int missionId) {
-        log.debug("Delete Mission: {}", missionId);
+        log.info("Delete Mission: {}", missionId);
         missionService.deleteMission(missionId);
         return new ErrorDto("Successfully deleted");
     }

@@ -1,6 +1,7 @@
 package bureau.release.system.service.impl;
 
 import bureau.release.system.config.OciRegistryProperties;
+import bureau.release.system.exception.ClientNotFoundException;
 import bureau.release.system.network.OciRegistryClient;
 import bureau.release.system.service.ArtifactUploader;
 import bureau.release.system.service.dto.client.Blob;
@@ -10,10 +11,11 @@ import feign.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.*;
-import java.nio.file.Files;
 import java.util.Base64;
 import java.util.List;
 
@@ -23,55 +25,57 @@ import java.util.List;
 public class OciArtifactUploader implements ArtifactUploader {
     private final OciRegistryClient ociClient;
     private final OciRegistryProperties properties;
+    private String csrfToken;
+    private String gorillaCSRF;
 
-    @Override
     public String uploadManifest(String repositoryName, Manifest manifest, List<Blob> blobsLayer){
         return "";
     }
 
-    @Override
-    public String uploadBlob(String repositoryName, Blob blob) {
-        Response response = ociClient.getCsrfToken(getBasicAuthHeader());
-        String sid = response.headers().get("set-cookie").stream().findFirst().get();
-        sid = "sid="+sid.split("sid=")[1].split(";")[0];
-
-        response = ociClient.getCsrfToken(getBasicAuthHeader());
-        String csrfToken = response.headers().get("X-Harbor-Csrf-Token").stream().findFirst().get();
-        String gorillaCsrf = response.headers().get("set-cookie").stream().findFirst().get();
-        gorillaCsrf = "_gorilla_csrf="+gorillaCsrf.split("_gorilla_csrf=")[1].split(";")[0];
-
-        response = ociClient.uploadBlobInit(
-                repositoryName,
-                getBasicAuthHeader(),
-                gorillaCsrf,
-                csrfToken);
-
-        csrfToken = response.headers().get("X-Harbor-Csrf-Token").stream().findFirst().get();
-        String locationUrl = response.headers().get(HttpHeaders.LOCATION).toString();
-        Location location = Location.parse(locationUrl);
-
+    public String uploadBlob(String repositoryName, String reference, StreamingResponseBody responseBody) {
+        Location location = initBlob(repositoryName);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try {
-            byte[] blobData = Files.readAllBytes(blob.path());
-            response = ociClient.uploadBlobChunk(
-                    repositoryName,
-                    location.uuid(),
-                    location.state(),
-                    blobData,
-                    getBasicAuthHeader(),
-                    gorillaCsrf,
-                    csrfToken
-            );
-            log.info("uploadBlobChunk response body={}", new String(response.body().asInputStream().readAllBytes()));
+            responseBody.writeTo(outputStream);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
+        Response response = ociClient.uploadBlobChunk(
+                repositoryName,
+                location.uuid(),
+                location.state(),
+                outputStream,
+                getBasicAuthHeader(),
+                gorillaCSRF,
+                csrfToken
+        );
+
         return String.valueOf(response.status());
     }
 
-    @Override
-    public List<String> uploadBlobs(String repositoryName, List<Blob> blobs) {
-        return List.of();
+    private Location initBlob(String repositoryName){
+        Location location;
+        try (Response firstResponse =
+                     ociClient.uploadBlobInit(repositoryName, getBasicAuthHeader(), gorillaCSRF, csrfToken);
+             Response response = isResponseCorrect(firstResponse) ? firstResponse :
+                     ociClient.uploadBlobInit(repositoryName, getBasicAuthHeader(), gorillaCSRF, csrfToken)) {
+            String locationUrl = response.headers().get(HttpHeaders.LOCATION).toString();
+            location = Location.parse(locationUrl);
+        }
+        return location;
+    }
+
+    private boolean isResponseCorrect(Response response) {
+        if (response.status() == HttpStatus.FORBIDDEN.value()) {
+            csrfToken = response.headers().get("X-Harbor-Csrf-Token").stream().findFirst()
+                    .orElseThrow(() -> new ClientNotFoundException("X-Harbor-Csrf-Token not found"));
+            gorillaCSRF = response.headers().get("set-cookie").stream().findFirst()
+                    .orElseThrow(() -> new ClientNotFoundException("X-Harbor-Csrf-Token not found"));
+            gorillaCSRF = "_gorilla_csrf="+gorillaCSRF.split("_gorilla_csrf=")[1].split(";")[0];
+            return false;
+        }
+        return true;
     }
 
     private String getBasicAuthHeader() {
