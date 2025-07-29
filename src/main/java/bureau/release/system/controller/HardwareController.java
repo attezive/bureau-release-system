@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @Slf4j
 @RequestMapping("/hardware")
@@ -14,23 +16,24 @@ public class HardwareController {
     private final HardwareService hardwareService;
 
     @GetMapping
-    public String getHardware(@RequestParam(required = false) Integer missionId) {
-        log.debug("getHardware");
+    public List<HardwareDto> getHardware(@RequestParam(required = false) Integer missionId) {
+        log.info("getHardware");
         if (missionId == null) {
-            return hardwareService.getAllHardware().toString();
+            return hardwareService.getAllHardware();
         }
-        return hardwareService.getHardwareByMission(missionId).toString();
+        return hardwareService.getHardwareByMissionId(missionId);
     }
 
     @GetMapping("/{hardwareId}")
-    public String getHardwareById(@PathVariable int hardwareId) {
-        log.debug("getHardwareById {}", hardwareId);
-        return hardwareService.getHardwareById(hardwareId).toString();
+    public HardwareDto getHardwareById(@PathVariable int hardwareId) {
+        log.info("getHardwareById {}", hardwareId);
+        return hardwareService.getHardwareById(hardwareId);
     }
 
     @PostMapping
-    public String createHardware(@RequestBody HardwareDto hardwareData) {
-        log.debug("createHardware {}", hardwareData);
-        return hardwareService.createHardware(hardwareData).toString();
+    public HardwareDto createHardware(@RequestBody HardwareDto hardwareData) {
+        HardwareDto hardware = hardwareService.createHardware(hardwareData);
+        log.info("createHardware {}", hardware);
+        return hardware;
     }
 }

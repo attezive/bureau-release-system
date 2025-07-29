@@ -3,8 +3,8 @@ package bureau.release.system.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "hardware")
@@ -21,6 +21,14 @@ public class Hardware {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @OneToMany(mappedBy = "hardware", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<HardwareToMission> missionLinks = new ArrayList<>();
+    @ManyToMany(mappedBy = "hardwareSet")
+    private Set<Mission> missions = new HashSet<>();
+
+    @ManyToMany
+    @JoinTable(
+            name = "firmware_to_hardware",
+            joinColumns = @JoinColumn(name = "hardware_id"),
+            inverseJoinColumns = @JoinColumn(name = "firmware_id")
+    )
+    private Set<Firmware> firmwareSet = new HashSet<>();
 }

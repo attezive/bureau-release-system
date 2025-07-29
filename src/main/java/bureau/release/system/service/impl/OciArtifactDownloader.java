@@ -1,26 +1,30 @@
 package bureau.release.system.service.impl;
 
 import bureau.release.system.config.OciRegistryProperties;
+import bureau.release.system.dal.FirmwareDao;
+import bureau.release.system.model.Firmware;
 import bureau.release.system.network.OciRegistryClient;
 import bureau.release.system.service.ArtifactDownloader;
-import bureau.release.system.service.dto.Blob;
-import bureau.release.system.service.dto.Manifest;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import bureau.release.system.service.dto.FirmwareVersionDto;
+import bureau.release.system.service.dto.ReleaseDto;
+import bureau.release.system.exception.ReleaseStreamException;
+import bureau.release.system.service.dto.client.Artifact;
+import bureau.release.system.exception.ClientNotFoundException;
+import bureau.release.system.service.dto.client.Manifest;
+import bureau.release.system.service.dto.client.ManifestLayer;
 import feign.Response;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
+import java.io.OutputStream;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -28,54 +32,88 @@ import java.util.List;
 public class OciArtifactDownloader implements ArtifactDownloader {
     private final OciRegistryClient ociClient;
     private final OciRegistryProperties properties;
+    private final FirmwareDao firmwareDao;
 
     @Override
-    public Manifest loadManifest(String repositoryName, String reference) {
-        try (
-                Response response = ociClient.getManifest(
-                        repositoryName,
-                        reference,
+    public Manifest getManifest(String repositoryName, String reference) {
+        Manifest manifest = ociClient.getManifest(
+                repositoryName,
+                reference,
+                getBasicAuthHeader());
+        manifest.setName(repositoryName);
+        manifest.setReference(reference);
+        return manifest;
+    }
+
+    @Override
+    public void loadReleaseContent(ReleaseDto release, OutputStream outputStream) {
+        try (TarArchiveOutputStream tarOut = new TarArchiveOutputStream(outputStream)) {
+            tarOut.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
+            tarOut.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_POSIX);
+
+            createDirectoriesAndFiles(tarOut, release.getFirmwareVersions());
+
+            tarOut.finish();
+        } catch (IOException e) {
+            throw new ReleaseStreamException(e.getMessage());
+        }
+    }
+
+    private void createDirectoriesAndFiles(TarArchiveOutputStream tarOut,
+                                           List<FirmwareVersionDto> firmwareVersionDtoList) throws IOException {
+        Set<String> createdDirectories = new HashSet<>();
+        for (FirmwareVersionDto firmwareVersionDto : firmwareVersionDtoList) {
+            Firmware firmware = firmwareDao.findById(firmwareVersionDto.getFirmwareId())
+                    .orElseThrow(() -> new EntityNotFoundException("Firmware not found"));
+
+            String dirEntryName = firmware.getName();
+            if (createdDirectories.contains(dirEntryName)) continue;
+
+            TarArchiveEntry dirEntry = new TarArchiveEntry(dirEntryName+"/");
+            dirEntry.setMode(TarArchiveEntry.DEFAULT_DIR_MODE);
+            tarOut.putArchiveEntry(dirEntry);
+            tarOut.closeArchiveEntry();
+            createdDirectories.add(dirEntryName);
+
+            Manifest manifest = getManifest(firmware.getOciName(), firmwareVersionDto.getFirmwareVersion());
+            for (ManifestLayer manifestLayer : manifest.getLayers()) {
+                addFileToTar(tarOut, manifestLayer, firmware.getName(), firmware.getOciName());
+            }
+        }
+    }
+
+    private void addFileToTar(TarArchiveOutputStream tarOut,
+                              ManifestLayer manifestLayer,
+                              String dirName,
+                              String repositoryName) throws IOException {
+
+        try (Response response = ociClient.getBlob(repositoryName, manifestLayer.getDigest(), getBasicAuthHeader());
+             InputStream fileStream = response.body().asInputStream()) {
+            TarArchiveEntry entry = new TarArchiveEntry(dirName + "/" + manifestLayer.getAnnotations().getTitle());
+            String contentLength = response.headers().get("Content-Length").stream()
+                    .findFirst()
+                    .orElse(String.valueOf(manifestLayer.getSize()));
+            entry.setSize(Long.parseLong(contentLength));
+
+            tarOut.putArchiveEntry(entry);
+            fileStream.transferTo(tarOut);
+            tarOut.closeArchiveEntry();
+        }
+    }
+
+    @Override
+    public List<Artifact> getArtifacts(String harborProjectName, String harborRepositoryName) {
+        ResponseEntity<List<Artifact>> response = ociClient
+                .getArtifacts(
+                        harborProjectName,
+                        harborRepositoryName,
                         getBasicAuthHeader()
-                )
-        ) {
-            return new Manifest(
-                    parseManifest(response.body().asInputStream().readAllBytes()), reference
-            );
-        } catch (IOException e) {
-            log.error("Failed to load manifest content: {}", e.getMessage());
-            return null;
+                );
+        List<Artifact> artifacts = response.getBody();
+        if (artifacts == null || artifacts.isEmpty()) {
+            throw new ClientNotFoundException("No repository artifacts found: " + harborProjectName + "/" + harborRepositoryName);
         }
-    }
-
-    @Override
-    public Blob loadBlob(String repositoryName, String digest, Path path) {
-        Blob blob = null;
-        try (Response response = ociClient.getBlob(repositoryName, digest, getBasicAuthHeader());
-             InputStream is = response.body().asInputStream()) {
-            Files.copy(is, path, StandardCopyOption.REPLACE_EXISTING);
-            blob = new Blob(path.getFileName().toString(), digest, path);
-        } catch (IOException e) {
-            log.error("Failed to load blob content: {}", e.getMessage());
-        }
-        return blob;
-    }
-
-    @Override
-    public List<Blob> loadBlobs(String repositoryName, Manifest manifest, String pathPrefix) {
-        List<JsonNode> layers = new ArrayList<>();
-        List<Blob> blobs = new ArrayList<>();
-        manifest.content().get("layers").forEach(layers::add);
-        for (JsonNode layer : layers) {
-            String digest = layer.get("digest").asText();
-            String path = pathPrefix + layer.get("annotations").get("org.opencontainers.image.title").asText();
-            blobs.add(loadBlob(repositoryName, digest, Paths.get(path)));
-        }
-        return blobs;
-    }
-
-    private JsonNode parseManifest(byte[] data) throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
-        return mapper.readTree(data);
+        return artifacts;
     }
 
     private String getBasicAuthHeader() {

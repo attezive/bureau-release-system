@@ -1,27 +1,56 @@
 package bureau.release.system.controller;
 
+import bureau.release.system.service.ArtifactDownloader;
+import bureau.release.system.service.dto.client.Artifact;
+import bureau.release.system.service.dto.FirmwareDto;
+import bureau.release.system.service.dto.FirmwareTypeDto;
+import bureau.release.system.service.impl.FirmwareService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
+@Slf4j
 @RestController
 @RequestMapping("/firmware")
 @RequiredArgsConstructor
 public class FirmwareController {
+    private final FirmwareService firmwareService;
+    private final ArtifactDownloader artifactDownloader;
 
     @GetMapping
-    public String getFirmware(@RequestParam(required = false, defaultValue = "0") int limit,
-                              @RequestParam(required = false, defaultValue = "0") int offset) {
-        return "";
+    public List<FirmwareDto> getFirmware(@RequestParam(required = false, defaultValue = "0") int page,
+                                         @RequestParam(required = false, defaultValue = "1") int size) {
+        log.info("getFirmware");
+        return firmwareService.getAllFirmware(page, size);
+    }
+
+    @GetMapping("/{firmwareId}")
+    public FirmwareDto getFirmwareById(@PathVariable long firmwareId) {
+        log.info("getFirmwareById {}", firmwareId);
+        return firmwareService.getFirmwareById(firmwareId);
     }
 
     @GetMapping("/{firmwareId}/versions")
-    public String getFirmwareVersions(@PathVariable int firmwareId) {
-        // TODO Что есть версия прошивки? У нас под каждую прошивку свой репозиторий внутри проекта, где ее версии?
-        return "";
+    public List<Artifact> getFirmwareVersions(@PathVariable int firmwareId) {
+        FirmwareDto firmware = firmwareService.getFirmwareById(firmwareId);
+        String[] repositoryLink = firmware.getOciName().split("/");
+        log.info("getFirmwareVersions {}", firmware.getOciName());
+        return artifactDownloader.getArtifacts(repositoryLink[0], repositoryLink[1]);
     }
 
     @PostMapping
-    public String createFirmware(@RequestBody byte[] firmwareData) {
-        return "";
+    public FirmwareDto createFirmware(@RequestBody FirmwareDto firmwareData) {
+        FirmwareDto firmware = firmwareService.createFirmware(firmwareData);
+        log.info("Create Firmware: {}", firmware);
+        return firmware;
     }
+
+    @GetMapping("/types")
+    public List<FirmwareTypeDto> getFirmwareTypes() {
+        log.info("Get Firmware Types");
+        return firmwareService.getFirmwareTypes();
+    }
+
 }
