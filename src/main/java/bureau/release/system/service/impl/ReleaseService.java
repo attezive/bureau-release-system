@@ -2,6 +2,8 @@ package bureau.release.system.service.impl;
 
 import bureau.release.system.dal.*;
 import bureau.release.system.model.*;
+import bureau.release.system.service.ArtifactDownloader;
+import bureau.release.system.service.ArtifactUploader;
 import bureau.release.system.service.dto.FirmwareVersionDto;
 import bureau.release.system.service.dto.ReleaseDto;
 import bureau.release.system.service.dto.ReleaseStatusDto;
@@ -12,7 +14,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -28,6 +32,9 @@ public class ReleaseService {
     private final FirmwareVersionDao firmwareVersionDao;
     private final FirmwareDao firmwareDao;
     private final MissionDao missionDao;
+    private final HardwareDao hardwareDao;
+    private final ArtifactDownloader artifactDownloader;
+    private final ArtifactUploader artifactUploader;
 
     @Transactional
     public ReleaseDto createRelease(ReleaseDto releaseDto) {
@@ -51,18 +58,22 @@ public class ReleaseService {
         Set<Long> firmwareIds = new HashSet<>();
         List<FirmwareVersionDto> firmwareVersions = new ArrayList<>();
         Firmware firmware;
+        Hardware hardware;
         FirmwareVersion firmwareVersion;
 
         release.setFirmwareVersions(new ArrayList<>());
         for (FirmwareVersionDto firmwareVersionDto : releaseDto.getFirmwareVersions()) {
             firmware = firmwareDao.findById(firmwareVersionDto.getFirmwareId())
                     .orElseThrow(() -> new EntityNotFoundException("Firmware not found"));
+            hardware = hardwareDao.findById(firmwareVersionDto.getHardwareId())
+                    .orElseThrow(() -> new EntityNotFoundException("Hardware not found"));
             firmwareIds.add(firmware.getId());
             firmwareVersion = FirmwareVersion
                     .builder()
                     .firmwareVersion(firmwareVersionDto.getFirmwareVersion())
                     .firmware(firmware)
                     .release(release)
+                    .hardware(hardware)
                     .build();
             firmwareVersionDao.save(firmwareVersion);
             release.getFirmwareVersions().add(firmwareVersion);
@@ -127,5 +138,37 @@ public class ReleaseService {
 
     private List<FirmwareVersionDto> getFirmwareVersions(Release release) {
         return release.getFirmwareVersions().stream().map(FirmwareVersionDto::new).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public StreamingResponseBody getTar(long releaseId){
+        Release release = releaseDao.findById(releaseId)
+                .orElseThrow(() -> new EntityNotFoundException("Release not found"));
+        return outputStream ->
+                artifactDownloader.loadReleaseContent(release, outputStream);
+    }
+
+    @Transactional
+    public ReleaseDto uploadReleaseToHarbor(long releaseId) {
+        Release release = releaseDao.findById(releaseId)
+                .orElseThrow(() -> new EntityNotFoundException("Release not found"));
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        setReleaseStatus(release, ReleaseStatusDto.DOWNLOADING);
+        artifactDownloader.loadReleaseContent(release, outputStream);
+        setReleaseStatus(release, ReleaseStatusDto.UPLOADING);
+        String digest = artifactUploader.uploadArtifact(outputStream,
+                release.getName()+".tar",
+                release.getOciName(),
+                release.getReference());
+        release.setDigest(digest);
+        setReleaseStatus(release, ReleaseStatusDto.COMPLETED);
+        return new ReleaseDto(release, getFirmwareVersions(release));
+    }
+
+    private void setReleaseStatus(Release release, ReleaseStatusDto releaseStatus) {
+        release.setStatus(
+                releaseStatusDao.findByName(releaseStatus.name())
+                        .orElseThrow(() -> new EntityNotFoundException("Release Status not found"))
+        );
     }
 }

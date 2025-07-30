@@ -1,19 +1,18 @@
 package bureau.release.system.service.impl;
 
 import bureau.release.system.config.OciRegistryProperties;
-import bureau.release.system.dal.FirmwareDao;
 import bureau.release.system.model.Firmware;
+import bureau.release.system.model.FirmwareVersion;
+import bureau.release.system.model.Hardware;
+import bureau.release.system.model.Release;
 import bureau.release.system.network.OciRegistryClient;
 import bureau.release.system.service.ArtifactDownloader;
-import bureau.release.system.service.dto.FirmwareVersionDto;
-import bureau.release.system.service.dto.ReleaseDto;
 import bureau.release.system.exception.ReleaseStreamException;
 import bureau.release.system.service.dto.client.Artifact;
 import bureau.release.system.exception.ClientNotFoundException;
 import bureau.release.system.service.dto.client.Manifest;
 import bureau.release.system.service.dto.client.ManifestLayer;
 import feign.Response;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -32,7 +31,6 @@ import java.util.*;
 public class OciArtifactDownloader implements ArtifactDownloader {
     private final OciRegistryClient ociClient;
     private final OciRegistryProperties properties;
-    private final FirmwareDao firmwareDao;
 
     @Override
     public Manifest getManifest(String repositoryName, String reference) {
@@ -46,7 +44,7 @@ public class OciArtifactDownloader implements ArtifactDownloader {
     }
 
     @Override
-    public void loadReleaseContent(ReleaseDto release, OutputStream outputStream) {
+    public void loadReleaseContent(Release release, OutputStream outputStream) {
         try (TarArchiveOutputStream tarOut = new TarArchiveOutputStream(outputStream)) {
             tarOut.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
             tarOut.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_POSIX);
@@ -60,24 +58,23 @@ public class OciArtifactDownloader implements ArtifactDownloader {
     }
 
     private void createDirectoriesAndFiles(TarArchiveOutputStream tarOut,
-                                           List<FirmwareVersionDto> firmwareVersionDtoList) throws IOException {
+                                           List<FirmwareVersion> firmwareVersionList) throws IOException {
         Set<String> createdDirectories = new HashSet<>();
-        for (FirmwareVersionDto firmwareVersionDto : firmwareVersionDtoList) {
-            Firmware firmware = firmwareDao.findById(firmwareVersionDto.getFirmwareId())
-                    .orElseThrow(() -> new EntityNotFoundException("Firmware not found"));
+        for (FirmwareVersion firmwareVersion : firmwareVersionList) {
+            Firmware firmware = firmwareVersion.getFirmware();
+            Hardware hardware = firmwareVersion.getHardware();
+            String dirEntryName = hardware.getName();
+            if (!createdDirectories.contains(dirEntryName)) {
+                TarArchiveEntry dirEntry = new TarArchiveEntry(dirEntryName+"/");
+                dirEntry.setMode(TarArchiveEntry.DEFAULT_DIR_MODE);
+                tarOut.putArchiveEntry(dirEntry);
+                tarOut.closeArchiveEntry();
+                createdDirectories.add(dirEntryName);
+            }
 
-            String dirEntryName = firmware.getName();
-            if (createdDirectories.contains(dirEntryName)) continue;
-
-            TarArchiveEntry dirEntry = new TarArchiveEntry(dirEntryName+"/");
-            dirEntry.setMode(TarArchiveEntry.DEFAULT_DIR_MODE);
-            tarOut.putArchiveEntry(dirEntry);
-            tarOut.closeArchiveEntry();
-            createdDirectories.add(dirEntryName);
-
-            Manifest manifest = getManifest(firmware.getOciName(), firmwareVersionDto.getFirmwareVersion());
+            Manifest manifest = getManifest(firmware.getOciName(), firmwareVersion.getFirmwareVersion());
             for (ManifestLayer manifestLayer : manifest.getLayers()) {
-                addFileToTar(tarOut, manifestLayer, firmware.getName(), firmware.getOciName());
+                addFileToTar(tarOut, manifestLayer, hardware.getName(), firmware.getOciName());
             }
         }
     }

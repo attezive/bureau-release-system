@@ -1,7 +1,6 @@
 package bureau.release.system.controller;
 
 import bureau.release.system.model.ReleaseStatus;
-import bureau.release.system.service.ArtifactDownloader;
 import bureau.release.system.service.dto.ReleaseDto;
 import bureau.release.system.service.impl.ReleaseService;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +19,6 @@ import java.util.List;
 @RequestMapping("/releases")
 public class ReleasesController {
     private final ReleaseService releaseService;
-    private final ArtifactDownloader artifactDownloader;
 
     @GetMapping
     public List<ReleaseDto> getReleases(@RequestParam(required = false, defaultValue = "0") int page,
@@ -31,18 +29,16 @@ public class ReleasesController {
     }
 
     @GetMapping("/{releaseId}")
-    public ReleaseDto getReleaseById(@PathVariable int releaseId) {
+    public ReleaseDto getReleaseById(@PathVariable long releaseId) {
         log.info("getReleaseById {}", releaseId);
         return releaseService.getReleaseById(releaseId);
     }
 
     @GetMapping(value = "/{releaseId}/tar", produces = "application/tar")
-    public ResponseEntity<StreamingResponseBody> getTar(@PathVariable int releaseId) {
+    public ResponseEntity<StreamingResponseBody> getTar(@PathVariable long releaseId) {
         log.info("getTar {}", releaseId);
         ReleaseDto releaseDto = releaseService.getReleaseById(releaseId);
-        StreamingResponseBody responseBody = outputStream ->
-                artifactDownloader.loadReleaseContent(releaseDto, outputStream);
-
+        StreamingResponseBody responseBody = releaseService.getTar(releaseId);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename="+releaseDto.getName()+".tar")
@@ -54,6 +50,12 @@ public class ReleasesController {
     public List<ReleaseStatus> getReleaseStatuses() {
         log.info("getReleaseStatuses");
         return releaseService.getReleaseStatuses();
+    }
+
+    @PostMapping("/{releaseId}/harbor")
+    public ReleaseDto uploadHarbor(@PathVariable long releaseId) {
+        log.info("upload to Harbor : release = {}", releaseId);
+        return releaseService.uploadReleaseToHarbor(releaseId);
     }
 
     @PostMapping
