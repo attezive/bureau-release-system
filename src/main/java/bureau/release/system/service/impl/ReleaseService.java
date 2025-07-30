@@ -55,6 +55,7 @@ public class ReleaseService {
 
     @Transactional
     public List<FirmwareVersionDto> createFirmwareVersions(ReleaseDto releaseDto, Release release) {
+        log.debug("Creating Firmware Versions: releaseId={}", releaseDto.getId());
         Set<Long> firmwareIds = new HashSet<>();
         List<FirmwareVersionDto> firmwareVersions = new ArrayList<>();
         Firmware firmware;
@@ -90,6 +91,7 @@ public class ReleaseService {
     @Transactional
     public void setupByOrigin(ReleaseDto releaseDto, Release release,
                                                   Set<Long> firmwareIds, List<FirmwareVersionDto> firmwareVersions) {
+        log.debug("Setting up Firmware Versions: originId={}", releaseDto.getOriginId());
         Firmware firmware;
         List<FirmwareVersion> originFirmware = releaseDao.findById(releaseDto.getOriginId())
                 .orElseThrow(() -> new EntityNotFoundException("Release not found"))
@@ -152,20 +154,24 @@ public class ReleaseService {
     public ReleaseDto uploadReleaseToHarbor(long releaseId) {
         Release release = releaseDao.findById(releaseId)
                 .orElseThrow(() -> new EntityNotFoundException("Release not found"));
+
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         setReleaseStatus(release, ReleaseStatusDto.DOWNLOADING);
         artifactDownloader.loadReleaseContent(release, outputStream);
+
         setReleaseStatus(release, ReleaseStatusDto.UPLOADING);
         String digest = artifactUploader.uploadArtifact(outputStream,
                 release.getName()+".tar",
                 release.getOciName(),
                 release.getReference());
+
         release.setDigest(digest);
         setReleaseStatus(release, ReleaseStatusDto.COMPLETED);
         return new ReleaseDto(release, getFirmwareVersions(release));
     }
 
     private void setReleaseStatus(Release release, ReleaseStatusDto releaseStatus) {
+        log.debug("Setting release status by releaseId={} to {}", release.getId(), releaseStatus.name());
         release.setStatus(
                 releaseStatusDao.findByName(releaseStatus.name())
                         .orElseThrow(() -> new EntityNotFoundException("Release Status not found"))

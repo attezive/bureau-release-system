@@ -60,6 +60,7 @@ public class MissionService {
 
     @Transactional(readOnly = true)
     public Set<Hardware> createHardwareSet(MissionDto missionDto) throws EntityNotFoundException {
+        log.debug("Creating Hardware Set for Mission {}", missionDto);
         Set<Hardware> hardwareSet = new HashSet<>();
         Mission mission = Mission.builder().name(missionDto.getName()).build();
         for (Long hardwareId : missionDto.getHardwareIds()) {

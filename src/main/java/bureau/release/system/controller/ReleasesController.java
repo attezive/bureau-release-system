@@ -24,19 +24,19 @@ public class ReleasesController {
     public List<ReleaseDto> getReleases(@RequestParam(required = false, defaultValue = "0") int page,
                               @RequestParam(required = false, defaultValue = "1") int size,
                               @RequestParam(required = false) Integer missionId) {
-        log.info("getReleases");
+        log.info("GetReleases: page={}, size={}, missionId={}", page, size, missionId);
         return releaseService.getAllReleases(page, size, missionId);
     }
 
     @GetMapping("/{releaseId}")
     public ReleaseDto getReleaseById(@PathVariable long releaseId) {
-        log.info("getReleaseById {}", releaseId);
+        log.info("GetReleaseById: id={}", releaseId);
         return releaseService.getReleaseById(releaseId);
     }
 
     @GetMapping(value = "/{releaseId}/tar", produces = "application/tar")
     public ResponseEntity<StreamingResponseBody> getTar(@PathVariable long releaseId) {
-        log.info("getTar {}", releaseId);
+        log.info("GetTar: releaseId={}", releaseId);
         ReleaseDto releaseDto = releaseService.getReleaseById(releaseId);
         StreamingResponseBody responseBody = releaseService.getTar(releaseId);
         return ResponseEntity.ok()
@@ -48,20 +48,20 @@ public class ReleasesController {
 
     @GetMapping("/statuses")
     public List<ReleaseStatus> getReleaseStatuses() {
-        log.info("getReleaseStatuses");
+        log.info("GetReleaseStatuses");
         return releaseService.getReleaseStatuses();
     }
 
     @PostMapping("/{releaseId}/harbor")
     public ReleaseDto uploadHarbor(@PathVariable long releaseId) {
-        log.info("upload to Harbor : release = {}", releaseId);
+        log.info("Upload to Harbor: releaseId = {}", releaseId);
         return releaseService.uploadReleaseToHarbor(releaseId);
     }
 
     @PostMapping
     public ReleaseDto createRelease(@RequestBody ReleaseDto releaseData) {
         ReleaseDto release = releaseService.createRelease(releaseData);
-        log.info("createRelease {}", release);
+        log.info("CreateRelease: releaseData={}", release);
         return release;
     }
 }

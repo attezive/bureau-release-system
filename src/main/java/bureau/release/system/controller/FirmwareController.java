@@ -22,34 +22,33 @@ public class FirmwareController {
     @GetMapping
     public List<FirmwareDto> getFirmware(@RequestParam(required = false, defaultValue = "0") int page,
                                          @RequestParam(required = false, defaultValue = "1") int size) {
-        log.info("getFirmware");
+        log.info("GetFirmware: page={}, size={}", page, size);
         return firmwareService.getAllFirmware(page, size);
     }
 
     @GetMapping("/{firmwareId}")
     public FirmwareDto getFirmwareById(@PathVariable long firmwareId) {
-        log.info("getFirmwareById {}", firmwareId);
+        log.info("GetFirmwareById: id={}", firmwareId);
         return firmwareService.getFirmwareById(firmwareId);
     }
 
     @GetMapping("/{firmwareId}/versions")
-    public List<Artifact> getFirmwareVersions(@PathVariable int firmwareId) {
+    public List<Artifact> getFirmwareVersions(@PathVariable long firmwareId) {
+        log.info("GetFirmwareVersions: id={}", firmwareId);
         FirmwareDto firmware = firmwareService.getFirmwareById(firmwareId);
         String[] repositoryLink = firmware.getOciName().split("/");
-        log.info("getFirmwareVersions {}", firmware.getOciName());
         return artifactDownloader.getArtifacts(repositoryLink[0], repositoryLink[1]);
     }
 
     @PostMapping
     public FirmwareDto createFirmware(@RequestBody FirmwareDto firmwareData) {
-        FirmwareDto firmware = firmwareService.createFirmware(firmwareData);
-        log.info("Create Firmware: {}", firmware);
-        return firmware;
+        log.info("CreateFirmware: {}", firmwareData);
+        return firmwareService.createFirmware(firmwareData);
     }
 
     @GetMapping("/types")
     public List<FirmwareTypeDto> getFirmwareTypes() {
-        log.info("Get Firmware Types");
+        log.info("GetFirmwareTypes");
         return firmwareService.getFirmwareTypes();
     }
 

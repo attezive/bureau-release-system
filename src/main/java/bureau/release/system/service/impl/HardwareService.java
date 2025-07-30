@@ -77,6 +77,7 @@ public class HardwareService {
 
     @Transactional(readOnly = true)
     public Set<Firmware> createFirmwareSet(HardwareDto hardwareDto) throws EntityNotFoundException {
+        log.debug("Create Firmware Set for Hardware {}", hardwareDto);
         Set<Firmware> firmwareSet = new HashSet<>();
         Hardware hardware = Hardware.builder().name(hardwareDto.getName()).build();
         for (Long firmwareId : hardwareDto.getFirmwareIds()) {

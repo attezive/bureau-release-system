@@ -19,7 +19,7 @@ public class OrasArtifactUploader implements ArtifactUploader {
                 properties.url().replace("http://", ""),
                 properties.ecrUsername(),
                 properties.ecrPassword());
-        log.info("Execute command login: {}", command);
+        log.debug("Execute command login: {}", command);
         Process process = Runtime.getRuntime().exec(command);
         BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
         String line;
@@ -38,16 +38,16 @@ public class OrasArtifactUploader implements ArtifactUploader {
                 ociName,
                 reference,
                 artifactName);
-        log.info("Execute command upload: {}", command);
 
         String digest;
+        log.debug("Execute command upload: {}", command);
         try {
             digest = executeUploadCommand(command);
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
             if (deleteFile(artifactName)) {
-                log.debug("Delete file: {}", artifactName);
+                log.debug("File deleted: {}", artifactName);
             } else {
                 log.error("Delete file failed: {}", artifactName);
             }
@@ -61,16 +61,16 @@ public class OrasArtifactUploader implements ArtifactUploader {
         String line;
         String digest = "";
         while ((line = reader.readLine()) != null) {
-            log.info("Artifact Oras Upload : {}", line);
+            log.debug("Artifact Oras Upload : {}", line);
             if (line.contains("Digest")) {
                 digest = line.replace("Digest: ", "");
-                log.info("Artifact Digest : {}", digest);
+                log.info("Artifact Digest: {}", digest);
             }
         }
         reader.close();
         BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
         while ((line = errorReader.readLine()) != null) {
-            log.error("Artifact Oras Upload : {}", line);
+            log.error("Artifact Oras Upload: {}", line);
             if (line.contains("Error: basic credential not found")){
                 login();
                 digest = executeUploadCommand(command);
@@ -80,6 +80,7 @@ public class OrasArtifactUploader implements ArtifactUploader {
     }
 
     private void createFile(ByteArrayOutputStream artifactBody, String artifactName) {
+        log.debug("Creating file: {}", artifactName);
         File file = new File(artifactName);
         try (OutputStream out = new FileOutputStream(file)) {
             artifactBody.writeTo(out);

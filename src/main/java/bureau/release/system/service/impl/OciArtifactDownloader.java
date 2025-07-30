@@ -34,6 +34,7 @@ public class OciArtifactDownloader implements ArtifactDownloader {
 
     @Override
     public Manifest getManifest(String repositoryName, String reference) {
+        log.debug("Getting Manifest for Reference {} from Repository {}", reference,  repositoryName);
         Manifest manifest = ociClient.getManifest(
                 repositoryName,
                 reference,
@@ -45,6 +46,7 @@ public class OciArtifactDownloader implements ArtifactDownloader {
 
     @Override
     public void loadReleaseContent(Release release, OutputStream outputStream) {
+        log.debug("Loading Release Content: releaseId={}", release.getId());
         try (TarArchiveOutputStream tarOut = new TarArchiveOutputStream(outputStream)) {
             tarOut.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
             tarOut.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_POSIX);
@@ -59,6 +61,7 @@ public class OciArtifactDownloader implements ArtifactDownloader {
 
     private void createDirectoriesAndFiles(TarArchiveOutputStream tarOut,
                                            List<FirmwareVersion> firmwareVersionList) throws IOException {
+        log.debug("Creating Directories and Files");
         Set<String> createdDirectories = new HashSet<>();
         for (FirmwareVersion firmwareVersion : firmwareVersionList) {
             Firmware firmware = firmwareVersion.getFirmware();
@@ -83,10 +86,11 @@ public class OciArtifactDownloader implements ArtifactDownloader {
                               ManifestLayer manifestLayer,
                               String dirName,
                               String repositoryName) throws IOException {
-
+        String fileName = dirName + "/" + manifestLayer.getAnnotations().getTitle();
+        log.debug("Adding File {} to Tar", fileName);
         try (Response response = ociClient.getBlob(repositoryName, manifestLayer.getDigest(), getBasicAuthHeader());
              InputStream fileStream = response.body().asInputStream()) {
-            TarArchiveEntry entry = new TarArchiveEntry(dirName + "/" + manifestLayer.getAnnotations().getTitle());
+            TarArchiveEntry entry = new TarArchiveEntry(fileName);
             String contentLength = response.headers().get("Content-Length").stream()
                     .findFirst()
                     .orElse(String.valueOf(manifestLayer.getSize()));
@@ -100,6 +104,7 @@ public class OciArtifactDownloader implements ArtifactDownloader {
 
     @Override
     public List<Artifact> getArtifacts(String harborProjectName, String harborRepositoryName) {
+        log.debug("Getting Artifacts for Harbor Project {} and Repository {}", harborProjectName, harborRepositoryName);
         ResponseEntity<List<Artifact>> response = ociClient
                 .getArtifacts(
                         harborProjectName,
