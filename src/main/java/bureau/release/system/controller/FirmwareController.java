@@ -1,9 +1,9 @@
 package bureau.release.system.controller;
 
 import bureau.release.system.service.ArtifactDownloader;
-import bureau.release.system.service.dto.client.Artifact;
 import bureau.release.system.service.dto.FirmwareDto;
 import bureau.release.system.service.dto.FirmwareTypeDto;
+import bureau.release.system.service.dto.client.Manifest;
 import bureau.release.system.service.impl.FirmwareService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,11 +33,10 @@ public class FirmwareController {
     }
 
     @GetMapping("/{firmwareId}/versions")
-    public List<Artifact> getFirmwareVersions(@PathVariable long firmwareId) {
+    public List<Manifest> getFirmwareVersions(@PathVariable long firmwareId) {
         log.info("GetFirmwareVersions: id={}", firmwareId);
         FirmwareDto firmware = firmwareService.getFirmwareById(firmwareId);
-        String[] repositoryLink = firmware.getOciName().split("/");
-        return artifactDownloader.getArtifacts(repositoryLink[0], repositoryLink[1]);
+        return artifactDownloader.getArtifacts(firmware.getOciName());
     }
 
     @PostMapping
@@ -51,5 +50,4 @@ public class FirmwareController {
         log.info("GetFirmwareTypes");
         return firmwareService.getFirmwareTypes();
     }
-
 }

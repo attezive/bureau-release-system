@@ -8,10 +8,9 @@ import bureau.release.system.model.Release;
 import bureau.release.system.network.OciRegistryClient;
 import bureau.release.system.service.ArtifactDownloader;
 import bureau.release.system.exception.ReleaseStreamException;
-import bureau.release.system.service.dto.client.Artifact;
-import bureau.release.system.exception.ClientNotFoundException;
 import bureau.release.system.service.dto.client.Manifest;
 import bureau.release.system.service.dto.client.ManifestLayer;
+import bureau.release.system.service.dto.client.TagList;
 import feign.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -104,19 +103,17 @@ public class OciArtifactDownloader implements ArtifactDownloader {
     }
 
     @Override
-    public List<Artifact> getArtifacts(String harborProjectName, String harborRepositoryName) {
-        log.debug("Getting Artifacts for Harbor Project {} and Repository {}", harborProjectName, harborRepositoryName);
-        ResponseEntity<List<Artifact>> response = ociClient
-                .getArtifacts(
-                        harborProjectName,
-                        harborRepositoryName,
-                        getBasicAuthHeader()
-                );
-        List<Artifact> artifacts = response.getBody();
-        if (artifacts == null || artifacts.isEmpty()) {
-            throw new ClientNotFoundException("No repository artifacts found: " + harborProjectName + "/" + harborRepositoryName);
+    public List<Manifest> getArtifacts(String repositoryName) {
+        log.debug("Getting Artifacts for Repository {}", repositoryName);
+
+        ResponseEntity<TagList> response = ociClient.getArtifactTagList(repositoryName, getBasicAuthHeader());
+        TagList tagList = response.getBody();
+        log.debug("TagList: {}", tagList);
+        if (tagList == null) {
+            return Collections.emptyList();
         }
-        return artifacts;
+
+        return tagList.getTags().stream().map(tag -> getManifest(repositoryName, tag)).toList();
     }
 
     private String getBasicAuthHeader() {
