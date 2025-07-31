@@ -1,6 +1,7 @@
 package bureau.release.system.service.impl;
 
 import bureau.release.system.config.OciRegistryProperties;
+import bureau.release.system.exception.OrasException;
 import bureau.release.system.service.ArtifactUploader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,10 +22,15 @@ public class OrasArtifactUploader implements ArtifactUploader {
                 properties.ecrPassword());
         log.debug("Execute command login: {}", command);
         Process process = Runtime.getRuntime().exec(command);
-        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
         String line;
-        while ((line = reader.readLine()) != null) {
-            System.out.println(line);
+        while ((line = errorReader.readLine()) != null) {
+            if (line.contains("WARN")) {
+                log.warn(line);
+            } else {
+                log.error(line);
+                throw new OrasException(line);
+            }
         }
     }
 
@@ -44,7 +50,7 @@ public class OrasArtifactUploader implements ArtifactUploader {
         try {
             digest = executeUploadCommand(command);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new OrasException("IO Exception: " + e.getMessage());
         } finally {
             if (deleteFile(artifactName)) {
                 log.debug("File deleted: {}", artifactName);
@@ -85,7 +91,7 @@ public class OrasArtifactUploader implements ArtifactUploader {
         try (OutputStream out = new FileOutputStream(file)) {
             artifactBody.writeTo(out);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new OrasException("IO Exception: " + e.getMessage());
         }
     }
 
