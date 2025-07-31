@@ -31,6 +31,7 @@ public class ReleaseDto {
         this.reference = release.getReference();
         this.digest = release.getDigest();
         this.status = ReleaseStatusDto.valueOf(release.getStatus().getName());
+        this.originId = release.getId();
         this.missionId = release.getMission().getId();
         this.releaseContent = releaseContent;
     }

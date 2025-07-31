@@ -44,6 +44,7 @@ public class OciArtifactDownloader implements ArtifactDownloader {
         return manifest;
     }
 
+    //TODO Add duplicate files loading per one time
     @Override
     public void loadReleaseContent(Release release, OutputStream outputStream) {
         log.debug("Loading Release Content: releaseId={}", release.getId());
@@ -68,7 +69,7 @@ public class OciArtifactDownloader implements ArtifactDownloader {
             Hardware hardware = firmwareVersion.getHardware();
             String dirEntryName = hardware.getName();
             if (!createdDirectories.contains(dirEntryName)) {
-                TarArchiveEntry dirEntry = new TarArchiveEntry(dirEntryName+"/");
+                TarArchiveEntry dirEntry = new TarArchiveEntry(dirEntryName+"/"+firmware.getName());
                 dirEntry.setMode(TarArchiveEntry.DEFAULT_DIR_MODE);
                 tarOut.putArchiveEntry(dirEntry);
                 tarOut.closeArchiveEntry();
@@ -77,7 +78,7 @@ public class OciArtifactDownloader implements ArtifactDownloader {
 
             Manifest manifest = getManifest(firmware.getOciName(), firmwareVersion.getFirmwareVersion());
             for (ManifestLayer manifestLayer : manifest.getLayers()) {
-                addFileToTar(tarOut, manifestLayer, hardware.getName(), firmware.getOciName());
+                addFileToTar(tarOut, manifestLayer, hardware.getName()+"/"+firmware.getName(), firmware.getOciName());
             }
         }
     }

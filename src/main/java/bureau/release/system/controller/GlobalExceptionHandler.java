@@ -1,5 +1,6 @@
 package bureau.release.system.controller;
 
+import bureau.release.system.exception.ClientException;
 import bureau.release.system.exception.ClientNotFoundException;
 import bureau.release.system.exception.OrasException;
 import bureau.release.system.service.dto.ErrorDto;
@@ -34,6 +35,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(OrasException.class)
     public ResponseEntity<ErrorDto> handleOrasException(OrasException exception) {
         log.error("Oras command exec: OrasException: {} from {}", exception.getMessage(), exception.getStackTrace()[0]);
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(new ErrorDto(exception.getMessage()));
+    }
+
+    @ExceptionHandler(ClientException.class)
+    public ResponseEntity<ErrorDto> handleClientException(ClientException exception) {
+        log.error("ClientException: {} from {}", exception.getMessage(), exception.getStackTrace()[0]);
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(new ErrorDto(exception.getMessage()));
     }
 }

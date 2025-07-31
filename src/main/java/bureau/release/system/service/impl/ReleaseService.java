@@ -1,6 +1,7 @@
 package bureau.release.system.service.impl;
 
 import bureau.release.system.dal.*;
+import bureau.release.system.exception.ReleaseSystemException;
 import bureau.release.system.model.*;
 import bureau.release.system.service.ArtifactDownloader;
 import bureau.release.system.service.ArtifactUploader;
@@ -42,6 +43,7 @@ public class ReleaseService {
                 .status(releaseStatusDao.findByName(ReleaseStatusDto.CREATED.name())
                         .orElseThrow(() -> new EntityNotFoundException("Release Status not found")))
                 .ociName(releaseDto.getOciName())
+                .reference(releaseDto.getReference())
                 .mission(missionDao.findById(releaseDto.getMissionId())
                         .orElseThrow(() -> new EntityNotFoundException("Mission not found")))
                 .releaseDate(LocalDate.now())
@@ -55,7 +57,7 @@ public class ReleaseService {
     public List<ReleaseContentDto> createReleaseContent(ReleaseDto releaseDto, Release release) {
         log.debug("Creating Release Content: releaseId={}", releaseDto.getId());
         List<ReleaseContentDto> releaseContentList = new ArrayList<>();
-        Set<FirmwareVersion> firmwareVersions = new HashSet<>();
+        List<FirmwareVersion> firmwareVersions = new ArrayList<>();
 
         for (ReleaseContentDto releaseContentDto : releaseDto.getReleaseContent()) {
             List<FirmwareVersionDto> firmwareVersionDtoList = new ArrayList<>();
@@ -76,27 +78,30 @@ public class ReleaseService {
                         .build();
                 firmwareVersionDao.save(firmwareVersion);
                 firmwareVersions.add(firmwareVersion);
-                firmwareVersionDtoList.add(firmwareVersionDto);
+                firmwareVersionDtoList.add(new FirmwareVersionDto(firmwareVersion));
             }
             releaseContentDto.setFirmwareVersions(firmwareVersionDtoList);
             releaseContentList.add(releaseContentDto);
         }
 
         if (releaseDto.getOriginId() != null) {
-            List<ReleaseContentDto> originReleaseContent = setupByOrigin(releaseDto.getOriginId(), firmwareVersions);
+            List<ReleaseContentDto> originReleaseContent = setupByOrigin(
+                    release,
+                    releaseDto.getOriginId(),
+                    firmwareVersions);
             releaseContentList.addAll(originReleaseContent);
         }
-
+        release.setFirmwareVersions(firmwareVersions);
         return releaseContentList;
     }
 
     @Transactional
-    public List<ReleaseContentDto> setupByOrigin(Long originId, Set<FirmwareVersion> firmwareVersions) {
+    public List<ReleaseContentDto> setupByOrigin(Release release, Long originId, List<FirmwareVersion> firmwareVersions) {
         log.debug("Setting up Release Content: originId={}", originId);
         Release originRelease = releaseDao.findById(originId)
                 .orElseThrow(() -> new EntityNotFoundException("Release not found"));
 
-        Map<Long, List<FirmwareVersionDto>> releaseContentMap = getReleaseContentMap(firmwareVersions.stream().toList());
+        Map<Long, List<FirmwareVersionDto>> releaseContentMap = getReleaseContentMap(firmwareVersions);
         for (FirmwareVersion originFirmwareVersion : originRelease.getFirmwareVersions()) {
             long hardwareId = originFirmwareVersion.getHardware().getId();
             FirmwareVersionDto originFirmwareVersionDto = new FirmwareVersionDto(originFirmwareVersion);
@@ -104,7 +109,16 @@ public class ReleaseService {
                 releaseContentMap.put(hardwareId, new ArrayList<>());
             }
             if (!releaseContentMap.get(hardwareId).contains(originFirmwareVersionDto)) {
-                releaseContentMap.get(hardwareId).add(originFirmwareVersionDto);
+                FirmwareVersion firmwareVersion = FirmwareVersion
+                        .builder()
+                        .firmwareVersion(originFirmwareVersion.getFirmwareVersion())
+                        .firmware(originFirmwareVersion.getFirmware())
+                        .release(release)
+                        .hardware(originFirmwareVersion.getHardware())
+                        .build();
+                firmwareVersionDao.save(firmwareVersion);
+                firmwareVersions.add(firmwareVersion);
+                releaseContentMap.get(hardwareId).add(new FirmwareVersionDto(firmwareVersion));
             }
         }
 
@@ -165,7 +179,6 @@ public class ReleaseService {
         return releaseContentMap;
     }
 
-    @Transactional(readOnly = true)
     public StreamingResponseBody getTar(long releaseId) {
         Release release = releaseDao.findById(releaseId)
                 .orElseThrow(() -> new EntityNotFoundException("Release not found"));
@@ -173,24 +186,44 @@ public class ReleaseService {
                 artifactDownloader.loadReleaseContent(release, outputStream);
     }
 
-    @Transactional
     public ReleaseDto uploadReleaseToHarbor(long releaseId) {
         Release release = releaseDao.findById(releaseId)
                 .orElseThrow(() -> new EntityNotFoundException("Release not found"));
 
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        setReleaseStatus(release, ReleaseStatusDto.DOWNLOADING);
-        artifactDownloader.loadReleaseContent(release, outputStream);
+        ByteArrayOutputStream outputStream;
+        try {
+            outputStream = downloadRelease(release);
+        } catch (ReleaseSystemException e) {
+            setReleaseStatus(release, ReleaseStatusDto.BUILD_ERROR);
+            throw e;
+        }
 
-        setReleaseStatus(release, ReleaseStatusDto.UPLOADING);
-        String digest = artifactUploader.uploadArtifact(outputStream,
-                release.getName() + ".tar",
-                release.getOciName(),
-                release.getReference());
+        String digest;
+        try {
+            digest = uploadRelease(release, outputStream);
+        }  catch (ReleaseSystemException e) {
+            setReleaseStatus(release, ReleaseStatusDto.BUILD_ERROR);
+            throw e;
+        }
 
         release.setDigest(digest);
         setReleaseStatus(release, ReleaseStatusDto.COMPLETED);
         return new ReleaseDto(release, getReleaseContentList(release));
+    }
+
+    private ByteArrayOutputStream downloadRelease(Release release) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        setReleaseStatus(release, ReleaseStatusDto.DOWNLOADING);
+        artifactDownloader.loadReleaseContent(release, outputStream);
+        return outputStream;
+    }
+
+    private String uploadRelease(Release release, ByteArrayOutputStream outputStream) {
+        setReleaseStatus(release, ReleaseStatusDto.UPLOADING);
+        return artifactUploader.uploadArtifact(outputStream,
+                release.getName() + ".tar",
+                release.getOciName(),
+                release.getReference());
     }
 
     private void setReleaseStatus(Release release, ReleaseStatusDto releaseStatus) {
@@ -199,5 +232,6 @@ public class ReleaseService {
                 releaseStatusDao.findByName(releaseStatus.name())
                         .orElseThrow(() -> new EntityNotFoundException("Release Status not found"))
         );
+        releaseDao.save(release);
     }
 }

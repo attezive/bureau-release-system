@@ -4,5 +4,6 @@ public enum ReleaseStatusDto {
     CREATED,
     DOWNLOADING,
     UPLOADING,
-    COMPLETED
+    COMPLETED,
+    BUILD_ERROR
 }
