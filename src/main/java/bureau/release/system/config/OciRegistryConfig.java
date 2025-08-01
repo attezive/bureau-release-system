@@ -1,5 +1,6 @@
 package bureau.release.system.config;
 
+import bureau.release.system.exception.ClientException;
 import bureau.release.system.exception.ClientNotFoundException;
 import feign.Client;
 import feign.Request;
@@ -51,7 +52,7 @@ public class OciRegistryConfig {
                 Request request = response.request();
                 return new ClientNotFoundException("Not founded: " + request.httpMethod() + " " + request.url());
             }
-            return new RuntimeException("OCI registry error");
+            return new ClientException("OCI registry error");
         };
     }
 

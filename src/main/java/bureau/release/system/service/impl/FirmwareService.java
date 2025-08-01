@@ -16,8 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -66,7 +64,7 @@ public class FirmwareService {
         return firmwareTypeDao.findAll().stream().map(FirmwareTypeDto::new).toList();
     }
 
-    private Set<Long> getHardwareIds(Firmware firmware) {
-        return firmware.getHardwareSet().stream().map(Hardware::getId).collect(Collectors.toSet());
+    private List<Long> getHardwareIds(Firmware firmware) {
+        return firmware.getHardwareSet().stream().map(Hardware::getId).toList();
     }
 }

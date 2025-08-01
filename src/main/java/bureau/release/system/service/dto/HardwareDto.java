@@ -5,7 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -13,27 +14,17 @@ import java.util.Set;
 public class HardwareDto {
     private long id;
     private String name;
-    private Set<Integer> missionsIds;
-    private Set<Long> firmwareIds;
+    private List<Integer> missionsIds;
+    private List<Long> firmwareIds;
 
-    public HardwareDto(Hardware hardware) {
+    public HardwareDto(Hardware hardware, List<Long> firmwareIds) {
         this.id = hardware.getId();
         this.name = hardware.getName();
-    }
-
-    public HardwareDto(Hardware hardware, Set<Integer> missionIds) {
-        this.id = hardware.getId();
-        this.name = hardware.getName();
-        this.missionsIds = missionIds;
-    }
-
-    public HardwareDto(long id, String name, Set<Long> firmwareIds) {
-        this.id = id;
-        this.name = name;
+        this.missionsIds = new ArrayList<>();
         this.firmwareIds = firmwareIds;
     }
 
-    public HardwareDto(Hardware hardware, Set<Integer> missionIds, Set<Long> firmwareIds) {
+    public HardwareDto(Hardware hardware, List<Long> firmwareIds, List<Integer> missionIds) {
         this.id = hardware.getId();
         this.name = hardware.getName();
         this.missionsIds = missionIds;

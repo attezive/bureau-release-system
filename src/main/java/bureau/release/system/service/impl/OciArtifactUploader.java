@@ -3,7 +3,6 @@ package bureau.release.system.service.impl;
 import bureau.release.system.config.OciRegistryProperties;
 import bureau.release.system.exception.ClientNotFoundException;
 import bureau.release.system.network.OciRegistryClient;
-import bureau.release.system.service.ArtifactUploader;
 import bureau.release.system.service.dto.client.Blob;
 import bureau.release.system.service.dto.client.Location;
 import bureau.release.system.service.dto.client.Manifest;
@@ -22,7 +21,7 @@ import java.util.List;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class OciArtifactUploader implements ArtifactUploader {
+public class OciArtifactUploader {
     private final OciRegistryClient ociClient;
     private final OciRegistryProperties properties;
     private String csrfToken;

@@ -17,27 +17,22 @@ public class ReleaseDto {
     private LocalDate releaseDate;
     private String ociName;
     private String reference;
+    private String digest;
     private ReleaseStatusDto status;
     private Long originId;
     private int missionId;
-    private List<FirmwareVersionDto> firmwareVersions;
+    private List<ReleaseContentDto> releaseContent;
 
-    public ReleaseDto(Release release) {
+    public ReleaseDto(Release release, List<ReleaseContentDto> releaseContent) {
         this.id = release.getId();
         this.name = release.getName();
         this.releaseDate = release.getReleaseDate();
         this.ociName = release.getOciName();
+        this.reference = release.getReference();
+        this.digest = release.getDigest();
         this.status = ReleaseStatusDto.valueOf(release.getStatus().getName());
+        this.originId = release.getId();
         this.missionId = release.getMission().getId();
-    }
-
-    public ReleaseDto(Release release, List<FirmwareVersionDto> firmwareVersions) {
-        this.id = release.getId();
-        this.name = release.getName();
-        this.releaseDate = release.getReleaseDate();
-        this.ociName = release.getOciName();
-        this.status = ReleaseStatusDto.valueOf(release.getStatus().getName());
-        this.missionId = release.getMission().getId();
-        this.firmwareVersions = firmwareVersions;
+        this.releaseContent = releaseContent;
     }
 }
