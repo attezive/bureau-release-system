@@ -3,8 +3,8 @@ package bureau.release.system.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "firmware")
@@ -29,5 +29,5 @@ public class Firmware {
     private FirmwareType type;
 
     @ManyToMany(mappedBy = "firmwareSet")
-    private Set<Hardware> hardwareSet =  new HashSet<>();
+    private List<Hardware> hardwareSet =  new ArrayList<>();
 }

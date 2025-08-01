@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -32,7 +31,7 @@ public class HardwareService {
                 .firmwareSet(createFirmwareSet(hardwareDto))
                 .build();
         hardware = hardwareDao.save(hardware);
-        return new HardwareDto(hardware.getId(), hardware.getName(), hardwareDto.getFirmwareIds());
+        return new HardwareDto(hardware, hardwareDto.getFirmwareIds());
     }
 
     @Transactional(readOnly = true)
@@ -41,10 +40,9 @@ public class HardwareService {
         hardwareDao.findAll()
                 .forEach(hardware -> hardwareDtoList
                         .add(new HardwareDto(
-                                        hardware,
-                                        getMissionsIds(hardware),
-                                        getFirmwareIds(hardware)
-                                )
+                                hardware,
+                                getFirmwareIds(hardware),
+                                getMissionsIds(hardware))
                         ));
         return hardwareDtoList;
     }
@@ -57,8 +55,8 @@ public class HardwareService {
                 .getHardwareSet()) {
             hardwareDtoList.add(new HardwareDto(
                     hardware,
-                    getMissionsIds(hardware),
-                    getFirmwareIds(hardware)
+                    getFirmwareIds(hardware),
+                    getMissionsIds(hardware)
             ));
         }
         return hardwareDtoList;
@@ -70,15 +68,13 @@ public class HardwareService {
                 .orElseThrow(() -> new EntityNotFoundException("Hardware not found"));
         return new HardwareDto(
                 hardware,
-                getMissionsIds(hardware),
-                getFirmwareIds(hardware)
-        );
+                getFirmwareIds(hardware),
+                getMissionsIds(hardware));
     }
 
-    @Transactional(readOnly = true)
-    public Set<Firmware> createFirmwareSet(HardwareDto hardwareDto) throws EntityNotFoundException {
+    private List<Firmware> createFirmwareSet(HardwareDto hardwareDto) throws EntityNotFoundException {
         log.debug("Create Firmware Set for Hardware {}", hardwareDto);
-        Set<Firmware> firmwareSet = new HashSet<>();
+        List<Firmware> firmwareSet = new ArrayList<>();
         Hardware hardware = Hardware.builder().name(hardwareDto.getName()).build();
         for (Long firmwareId : hardwareDto.getFirmwareIds()) {
             Firmware firmware = firmwareDao.findById(firmwareId)
@@ -89,11 +85,11 @@ public class HardwareService {
         return firmwareSet;
     }
 
-    private Set<Integer> getMissionsIds(Hardware hardware) {
-        return hardware.getMissions().stream().map(Mission::getId).collect(Collectors.toSet());
+    private List<Integer> getMissionsIds(Hardware hardware) {
+        return hardware.getMissions().stream().map(Mission::getId).toList();
     }
 
-    private Set<Long> getFirmwareIds(Hardware hardware) {
-        return hardware.getFirmwareSet().stream().map(Firmware::getId).collect(Collectors.toSet());
+    private List<Long> getFirmwareIds(Hardware hardware) {
+        return hardware.getFirmwareSet().stream().map(Firmware::getId).toList();
     }
 }

@@ -53,8 +53,7 @@ public class ReleaseService {
         return new ReleaseDto(release, releaseContent);
     }
 
-    @Transactional
-    public List<ReleaseContentDto> createReleaseContent(ReleaseDto releaseDto, Release release) {
+    private List<ReleaseContentDto> createReleaseContent(ReleaseDto releaseDto, Release release) {
         log.debug("Creating Release Content: releaseId={}", releaseDto.getId());
         List<ReleaseContentDto> releaseContentList = new ArrayList<>();
         List<FirmwareVersion> firmwareVersions = new ArrayList<>();
@@ -95,8 +94,7 @@ public class ReleaseService {
         return releaseContentList;
     }
 
-    @Transactional
-    public List<ReleaseContentDto> setupByOrigin(Release release, Long originId, List<FirmwareVersion> firmwareVersions) {
+    private List<ReleaseContentDto> setupByOrigin(Release release, Long originId, List<FirmwareVersion> firmwareVersions) {
         log.debug("Setting up Release Content: originId={}", originId);
         Release originRelease = releaseDao.findById(originId)
                 .orElseThrow(() -> new EntityNotFoundException("Release not found"));

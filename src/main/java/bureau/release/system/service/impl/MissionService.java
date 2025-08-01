@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -58,10 +57,9 @@ public class MissionService {
         missionDao.deleteById(missionId);
     }
 
-    @Transactional(readOnly = true)
-    public Set<Hardware> createHardwareSet(MissionDto missionDto) throws EntityNotFoundException {
+    private List<Hardware> createHardwareSet(MissionDto missionDto) throws EntityNotFoundException {
         log.debug("Creating Hardware Set for Mission {}", missionDto);
-        Set<Hardware> hardwareSet = new HashSet<>();
+        List<Hardware> hardwareSet = new ArrayList<>();
         Mission mission = Mission.builder().name(missionDto.getName()).build();
         for (Long hardwareId : missionDto.getHardwareIds()) {
             Hardware hardware = hardwareDao.findById(hardwareId)
@@ -72,7 +70,7 @@ public class MissionService {
         return hardwareSet;
     }
 
-    private Set<Long> getHardwareIds(Mission mission) {
-        return mission.getHardwareSet().stream().map(Hardware::getId).collect(Collectors.toSet());
+    private List<Long> getHardwareIds(Mission mission) {
+        return mission.getHardwareSet().stream().map(Hardware::getId).toList();
     }
 }

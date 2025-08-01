@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 public class FirmwareVersionDto {
-    private long id;
+    private Long id;
     private String firmwareVersion;
     private Long firmwareId;
     private Long releaseId;

@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Set;
+import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -13,20 +13,20 @@ import java.util.Set;
 public class MissionDto {
     private int id;
     private String name;
-    private Set<Long> hardwareIds;
+    private List<Long> hardwareIds;
 
     public MissionDto(Mission mission) {
         this.id = mission.getId();
         this.name = mission.getName();
     }
 
-    public MissionDto(Mission mission, Set<Long> hardwareIds) {
+    public MissionDto(Mission mission, List<Long> hardwareIds) {
         this.id = mission.getId();
         this.name = mission.getName();
         this.hardwareIds = hardwareIds;
     }
 
-    public MissionDto(String name, Set<Long> hardwareIds) {
+    public MissionDto(String name, List<Long> hardwareIds) {
         this.name = name;
         this.hardwareIds = hardwareIds;
     }

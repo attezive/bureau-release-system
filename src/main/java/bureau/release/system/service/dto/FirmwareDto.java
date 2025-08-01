@@ -5,7 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -15,16 +16,17 @@ public class FirmwareDto {
     private String name;
     private String type;
     private String ociName;
-    private Set<Long> hardwareIds;
+    private List<Long> hardwareIds;
 
     public FirmwareDto(Firmware firmware) {
         this.id = firmware.getId();
         this.name = firmware.getName();
         this.type = firmware.getType().getName();
         this.ociName = firmware.getOciName();
+        this.hardwareIds = new ArrayList<>();
     }
 
-    public FirmwareDto(Firmware firmware,  Set<Long> hardwareIds) {
+    public FirmwareDto(Firmware firmware, List<Long> hardwareIds) {
         this.id = firmware.getId();
         this.name = firmware.getName();
         this.type = firmware.getType().getName();
