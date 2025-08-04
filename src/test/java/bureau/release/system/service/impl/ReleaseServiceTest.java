@@ -3,14 +3,15 @@ package bureau.release.system.service.impl;
 import bureau.release.system.dal.*;
 import bureau.release.system.model.*;
 import bureau.release.system.service.dto.*;
+import bureau.release.system.service.mapping.FirmwareVersionMapper;
+import bureau.release.system.service.mapping.MissionMapper;
+import bureau.release.system.service.mapping.ReleaseMapper;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatchers;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
+import org.mapstruct.factory.Mappers;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -45,50 +46,65 @@ class ReleaseServiceTest {
     @Mock
     private HardwareDao hardwareDao;
 
+    @Spy
+    private FirmwareVersionMapper firmwareVersionMapper = Mappers.getMapper(FirmwareVersionMapper.class);
+
+    @Spy
+    private ReleaseMapper releaseMapper = Mappers.getMapper(ReleaseMapper.class);
+
     private Long releaseId;
     private int missionId;
     private List<ReleaseContentDto> releaseContentList;
     private List<FirmwareVersion> firmwareVersionList;
-    private Firmware firmware1;
-    private Firmware firmware2;
-    private Firmware firmware3;
-    private Hardware hardware1;
-    private Hardware hardware2;
+    private Firmware firstFirmware;
+    private Firmware secondFirmware;
+    private Firmware thirdFirmware;
+    private Hardware firstHardware;
+    private Hardware secondHardware;
 
     @BeforeEach
     void setUp() {
         releaseId = 1L;
         missionId = 1;
-        firmware1 = Firmware.builder().id(1L).name("Firmware 1").build();
-        firmware2 = Firmware.builder().id(2L).name("Firmware 2").build();
-        firmware3 = Firmware.builder().id(3L).name("Firmware 3").build();
+        firstFirmware = Firmware.builder().id(1L).name("Firmware 1").build();
+        secondFirmware = Firmware.builder().id(2L).name("Firmware 2").build();
+        thirdFirmware = Firmware.builder().id(3L).name("Firmware 3").build();
 
-        hardware1 = Hardware.builder().id(1L).name("hardware 1")
-                .firmwareSet(List.of(firmware1, firmware2)).build();
-        hardware2 = Hardware.builder().id(2L).name("hardware 2")
-                .firmwareSet(List.of(firmware3)).build();
+        firstHardware = Hardware.builder().id(1L).name("hardware 1")
+                .firmwareList(List.of(firstFirmware, secondFirmware)).build();
+        secondHardware = Hardware.builder().id(2L).name("hardware 2")
+                .firmwareList(List.of(thirdFirmware)).build();
 
         Release release = Release.builder().id(releaseId).build();
 
-        FirmwareVersion firmwareVersion1 = FirmwareVersion.builder().firmwareVersion("v1")
-                .firmware(firmware1).hardware(hardware1).release(release).build();
-        FirmwareVersion firmwareVersion2 = FirmwareVersion.builder().firmwareVersion("v2")
-                .firmware(firmware2).hardware(hardware1).release(release).build();
-        FirmwareVersion firmwareVersion3 = FirmwareVersion.builder().firmwareVersion("v2")
-                .firmware(firmware3).hardware(hardware2).release(release).build();
-        firmwareVersionList = List.of(firmwareVersion1, firmwareVersion2, firmwareVersion3);
+        FirmwareVersion firstFirmwareVersion = FirmwareVersion.builder().firmwareVersion("v1")
+                .firmware(firstFirmware).hardware(firstHardware).release(release).build();
+        FirmwareVersionDto firstFirmwareVersionDto = new FirmwareVersionDto(null,
+                firstFirmwareVersion.getFirmwareVersion(), firstFirmware.getId(),
+                release.getId(), firstHardware.getId());
 
-        ReleaseContentDto releaseContentDto1 = new ReleaseContentDto();
-        releaseContentDto1.setHardwareId(hardware1.getId());
-        releaseContentDto1.setFirmwareVersions(List.of(
-                new FirmwareVersionDto(firmwareVersion1),
-                new FirmwareVersionDto(firmwareVersion2)
-        ));
-        ReleaseContentDto releaseContentDto2 = new ReleaseContentDto();
-        releaseContentDto2.setHardwareId(hardware2.getId());
-        releaseContentDto2.setFirmwareVersions(List.of(new FirmwareVersionDto(firmwareVersion3)));
+        FirmwareVersion secondFirmwareVersion = FirmwareVersion.builder().firmwareVersion("v2")
+                .firmware(secondFirmware).hardware(firstHardware).release(release).build();
+        FirmwareVersionDto secondFirmwareVersionDto = new FirmwareVersionDto(null,
+                secondFirmwareVersion.getFirmwareVersion(), secondFirmware.getId(),
+                release.getId(), firstHardware.getId());
 
-        releaseContentList = List.of(releaseContentDto1, releaseContentDto2);
+        FirmwareVersion thirdFirmwareVersion = FirmwareVersion.builder().firmwareVersion("v2")
+                .firmware(thirdFirmware).hardware(secondHardware).release(release).build();
+        FirmwareVersionDto thirdFirmwareVersionDto = new FirmwareVersionDto(null,
+                thirdFirmwareVersion.getFirmwareVersion(), thirdFirmware.getId(),
+                release.getId(), secondHardware.getId());
+
+        firmwareVersionList = List.of(firstFirmwareVersion, secondFirmwareVersion, thirdFirmwareVersion);
+
+        ReleaseContentDto firstReleaseContentDto = new ReleaseContentDto();
+        firstReleaseContentDto.setHardwareId(firstHardware.getId());
+        firstReleaseContentDto.setFirmwareVersions(List.of(firstFirmwareVersionDto, secondFirmwareVersionDto));
+        ReleaseContentDto secondReleaseContentDto = new ReleaseContentDto();
+        secondReleaseContentDto.setHardwareId(secondHardware.getId());
+        secondReleaseContentDto.setFirmwareVersions(List.of(thirdFirmwareVersionDto));
+
+        releaseContentList = List.of(firstReleaseContentDto, secondReleaseContentDto);
     }
 
     @Test
@@ -125,24 +141,29 @@ class ReleaseServiceTest {
                 .releaseDate(LocalDate.now())
                 .firmwareVersions(firmwareVersionList)
                 .build();
-        ReleaseDto correctReleaseDto = new ReleaseDto(release, releaseContentList);
-        correctReleaseDto.setOriginId(releaseId);
+        ReleaseDto correctReleaseDto = new ReleaseDto(release.getId(), release.getName(), release.getReleaseDate(),
+                release.getOciName(), release.getReference(), release.getDigest(),
+                ReleaseStatusDto.valueOf(releaseStatus.getName()), release.getId(), release.getMission().getId(),
+                releaseContentList);
 
         Mockito.when(releaseStatusDao.findByName(ReleaseStatusDto.CREATED.name())).thenReturn(Optional.of(releaseStatus));
         Mockito.when(missionDao.findById(releaseDto.getMissionId())).thenReturn(Optional.of(mission));
         Mockito.when(releaseDao.save(ArgumentMatchers.any(Release.class))).thenReturn(savedRelease);
 
-        Mockito.when(firmwareDao.findById(1L)).thenReturn(Optional.of(firmware1));
-        Mockito.when(firmwareDao.findById(2L)).thenReturn(Optional.of(firmware2));
-        Mockito.when(firmwareDao.findById(3L)).thenReturn(Optional.of(firmware3));
-        Mockito.when(hardwareDao.findById(1L)).thenReturn(Optional.of(hardware1));
-        Mockito.when(hardwareDao.findById(2L)).thenReturn(Optional.of(hardware2));
+        Mockito.when(firmwareDao.findById(1L)).thenReturn(Optional.of(firstFirmware));
+        Mockito.when(firmwareDao.findById(2L)).thenReturn(Optional.of(secondFirmware));
+        Mockito.when(firmwareDao.findById(3L)).thenReturn(Optional.of(thirdFirmware));
+        Mockito.when(hardwareDao.findById(1L)).thenReturn(Optional.of(firstHardware));
+        Mockito.when(hardwareDao.findById(2L)).thenReturn(Optional.of(secondHardware));
 
         Mockito.when(firmwareVersionDao.save(ArgumentMatchers.any(FirmwareVersion.class)))
                 .thenReturn(new FirmwareVersion());
 
         ReleaseDto checkedReleaseDto = releaseService.createRelease(releaseDto);
         assertEquals(correctReleaseDto, checkedReleaseDto, "Incorrect releaseDto");
+        Mockito.verify(releaseStatusDao, Mockito.times(1)).findByName(ReleaseStatusDto.CREATED.name());
+        Mockito.verify(missionDao, Mockito.times(1)).findById(releaseDto.getMissionId());
+        Mockito.verify(releaseMapper, Mockito.times(1)).toEntity(releaseDto, releaseStatus, mission);
     }
 
     @Test
@@ -180,8 +201,10 @@ class ReleaseServiceTest {
                 .releaseDate(LocalDate.now())
                 .firmwareVersions(firmwareVersionList)
                 .build();
-        ReleaseDto correctReleaseDto = new ReleaseDto(release, releaseContentList);
-        correctReleaseDto.setOriginId(releaseId);
+        ReleaseDto correctReleaseDto = new ReleaseDto(release.getId(), release.getName(), release.getReleaseDate(),
+                release.getOciName(), release.getReference(), release.getDigest(),
+                ReleaseStatusDto.valueOf(releaseStatus.getName()), release.getId(), release.getMission().getId(),
+                releaseContentList);
 
         Mockito.when(releaseStatusDao.findByName(ReleaseStatusDto.CREATED.name())).thenReturn(Optional.of(releaseStatus));
         Mockito.when(missionDao.findById(releaseDto.getMissionId())).thenReturn(Optional.of(mission));
@@ -194,6 +217,8 @@ class ReleaseServiceTest {
 
         ReleaseDto checkedReleaseDto = releaseService.createRelease(releaseDto);
         assertEquals(correctReleaseDto, checkedReleaseDto, "Incorrect releaseDto");
+        Mockito.verify(releaseStatusDao, Mockito.times(1)).findByName(ReleaseStatusDto.CREATED.name());
+        Mockito.verify(missionDao, Mockito.times(1)).findById(releaseDto.getMissionId());
     }
 
     @Test
@@ -212,7 +237,10 @@ class ReleaseServiceTest {
                 .releaseDate(LocalDate.now())
                 .firmwareVersions(firmwareVersionList)
                 .build();
-        ReleaseDto firstReleaseDto = new ReleaseDto(firstRelease, releaseContentList);
+        ReleaseDto firstReleaseDto = new ReleaseDto(firstRelease.getId(), firstRelease.getName(),
+                firstRelease.getReleaseDate(), firstRelease.getOciName(), firstRelease.getReference(), firstRelease.getDigest(),
+                ReleaseStatusDto.valueOf(releaseStatus.getName()), firstRelease.getId(), firstRelease.getMission().getId(),
+                releaseContentList);
         Release secondRelease = Release
                 .builder()
                 .id(releaseId+1)
@@ -224,7 +252,10 @@ class ReleaseServiceTest {
                 .releaseDate(LocalDate.now())
                 .firmwareVersions(firmwareVersionList)
                 .build();
-        ReleaseDto secondReleaseDto = new ReleaseDto(secondRelease, releaseContentList);
+        ReleaseDto secondReleaseDto = new ReleaseDto(secondRelease.getId(), secondRelease.getName(),
+                secondRelease.getReleaseDate(), secondRelease.getOciName(), secondRelease.getReference(), secondRelease.getDigest(),
+                ReleaseStatusDto.valueOf(releaseStatus.getName()), secondRelease.getId(), secondRelease.getMission().getId(),
+                releaseContentList);
 
         Mockito.when(releaseDao.findAll(PageRequest.of(0, 1)))
                 .thenReturn(new PageImpl<>(List.of(firstRelease)));
@@ -296,7 +327,10 @@ class ReleaseServiceTest {
                 .releaseDate(LocalDate.now())
                 .firmwareVersions(firmwareVersionList)
                 .build();
-        ReleaseDto releaseDto = new ReleaseDto(release, releaseContentList);
+        ReleaseDto releaseDto = new ReleaseDto(release.getId(), release.getName(), release.getReleaseDate(),
+                release.getOciName(), release.getReference(), release.getDigest(),
+                ReleaseStatusDto.valueOf(releaseStatus.getName()), release.getId(), release.getMission().getId(),
+                releaseContentList);
 
         Mockito.when(releaseDao.findById(releaseId)).thenReturn(Optional.of(release));
 

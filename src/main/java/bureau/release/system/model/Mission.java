@@ -27,5 +27,5 @@ public class Mission {
             joinColumns = @JoinColumn(name = "mission_id"),
             inverseJoinColumns = @JoinColumn(name = "hardware_id")
     )
-    private List<Hardware> hardwareSet = new ArrayList<>();
+    private List<Hardware> hardwareList = new ArrayList<>();
 }

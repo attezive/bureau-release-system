@@ -22,17 +22,4 @@ public class ReleaseDto {
     private Long originId;
     private int missionId;
     private List<ReleaseContentDto> releaseContent;
-
-    public ReleaseDto(Release release, List<ReleaseContentDto> releaseContent) {
-        this.id = release.getId();
-        this.name = release.getName();
-        this.releaseDate = release.getReleaseDate();
-        this.ociName = release.getOciName();
-        this.reference = release.getReference();
-        this.digest = release.getDigest();
-        this.status = ReleaseStatusDto.valueOf(release.getStatus().getName());
-        this.originId = release.getId();
-        this.missionId = release.getMission().getId();
-        this.releaseContent = releaseContent;
-    }
 }

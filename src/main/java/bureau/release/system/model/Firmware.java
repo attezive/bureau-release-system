@@ -26,8 +26,8 @@ public class Firmware {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "type", nullable = false)
-    private FirmwareType type;
+    private FirmwareType firmwareType;
 
-    @ManyToMany(mappedBy = "firmwareSet")
-    private List<Hardware> hardwareSet =  new ArrayList<>();
+    @ManyToMany(mappedBy = "firmwareList")
+    private List<Hardware> hardwareList =  new ArrayList<>();
 }

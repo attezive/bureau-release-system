@@ -16,18 +16,4 @@ public class HardwareDto {
     private String name;
     private List<Integer> missionsIds;
     private List<Long> firmwareIds;
-
-    public HardwareDto(Hardware hardware, List<Long> firmwareIds) {
-        this.id = hardware.getId();
-        this.name = hardware.getName();
-        this.missionsIds = new ArrayList<>();
-        this.firmwareIds = firmwareIds;
-    }
-
-    public HardwareDto(Hardware hardware, List<Long> firmwareIds, List<Integer> missionIds) {
-        this.id = hardware.getId();
-        this.name = hardware.getName();
-        this.missionsIds = missionIds;
-        this.firmwareIds = firmwareIds;
-    }
 }

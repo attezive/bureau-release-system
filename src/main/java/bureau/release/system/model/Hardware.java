@@ -21,7 +21,7 @@ public class Hardware {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @ManyToMany(mappedBy = "hardwareSet")
+    @ManyToMany(mappedBy = "hardwareList")
     private List<Mission> missions = new ArrayList<>();
 
     @ManyToMany
@@ -30,5 +30,5 @@ public class Hardware {
             joinColumns = @JoinColumn(name = "hardware_id"),
             inverseJoinColumns = @JoinColumn(name = "firmware_id")
     )
-    private List<Firmware> firmwareSet = new ArrayList<>();
+    private List<Firmware> firmwareList = new ArrayList<>();
 }
