@@ -1,11 +1,9 @@
 package bureau.release.system.service.dto;
 
-import bureau.release.system.model.Hardware;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @NoArgsConstructor

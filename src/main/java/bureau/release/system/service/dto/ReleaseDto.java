@@ -1,6 +1,5 @@
 package bureau.release.system.service.dto;
 
-import bureau.release.system.model.Release;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
