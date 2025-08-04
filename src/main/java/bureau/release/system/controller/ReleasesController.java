@@ -52,7 +52,7 @@ public class ReleasesController {
         return releaseService.getReleaseStatuses();
     }
 
-    @PostMapping("/{releaseId}/harbor")
+    @PostMapping("/{releaseId}")
     public ReleaseDto uploadHarbor(@PathVariable long releaseId) {
         log.info("Upload to Harbor: releaseId = {}", releaseId);
         return releaseService.uploadReleaseToHarbor(releaseId);
