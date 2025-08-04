@@ -23,7 +23,7 @@ public class MissionsController {
     }
 
     @GetMapping("/{missionId}")
-    public MissionDto getMission(@PathVariable int missionId) {
+    public MissionDto getMissionById(@PathVariable int missionId) {
         log.info("GetMission: id={}", missionId);
         return missionService.getMissionById(missionId);
     }
