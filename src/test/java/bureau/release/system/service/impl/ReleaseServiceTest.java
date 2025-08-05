@@ -4,7 +4,6 @@ import bureau.release.system.dal.*;
 import bureau.release.system.model.*;
 import bureau.release.system.service.dto.*;
 import bureau.release.system.service.mapping.FirmwareVersionMapper;
-import bureau.release.system.service.mapping.MissionMapper;
 import bureau.release.system.service.mapping.ReleaseMapper;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;

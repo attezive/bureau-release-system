@@ -3,14 +3,12 @@ package bureau.release.system.network;
 import bureau.release.system.config.OciRegistryConfig;
 import bureau.release.system.service.dto.client.Manifest;
 import bureau.release.system.service.dto.client.TagList;
-import feign.Headers;
 import feign.Response;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.OutputStream;
 
 @FeignClient(
         name = "oci-registry-client",
