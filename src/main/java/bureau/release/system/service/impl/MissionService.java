@@ -31,6 +31,7 @@ public class MissionService {
                     .orElseThrow(() -> new EntityNotFoundException("Hardware not found"));
             hardwareList.add(hardware);
         }
+        log.debug("Create Mission for MissionDto {} and Hardware {}", missionDto, hardwareList);
         Mission mission = missionMapper.toEntity(missionDto, hardwareList);
         return missionMapper.toDto(missionDao.save(mission));
     }
@@ -44,6 +45,7 @@ public class MissionService {
     public MissionDto getMissionById(int missionId) throws EntityNotFoundException {
         Mission mission = missionDao.findById(missionId)
                 .orElseThrow(() -> new EntityNotFoundException("Mission not found"));
+        log.debug("Get Mission {} for MissionDto id {}", mission, missionId);
         return missionMapper.toDto(mission);
     }
 

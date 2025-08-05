@@ -22,16 +22,16 @@ public class MissionsController {
         return missionService.getAllMissions();
     }
 
-    @GetMapping("/{missionId}")
-    public MissionDto getMissionById(@PathVariable int missionId) {
-        log.info("GetMission: id={}", missionId);
-        return missionService.getMissionById(missionId);
-    }
-
     @PostMapping
     public MissionDto createMission(@RequestBody MissionDto missionData) {
         log.info("CreateMission: missionData={}", missionData);
         return missionService.createMission(missionData);
+    }
+
+    @GetMapping("/{missionId}")
+    public MissionDto getMissionById(@PathVariable int missionId) {
+        log.info("GetMission: id={}", missionId);
+        return missionService.getMissionById(missionId);
     }
 
     @DeleteMapping("/{missionId}")

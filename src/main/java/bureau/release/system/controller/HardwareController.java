@@ -24,15 +24,15 @@ public class HardwareController {
         return hardwareService.getHardwareByMissionId(missionId);
     }
 
-    @GetMapping("/{hardwareId}")
-    public HardwareDto getHardwareById(@PathVariable long hardwareId) {
-        log.info("GetHardwareById: id={}", hardwareId);
-        return hardwareService.getHardwareById(hardwareId);
-    }
-
     @PostMapping
     public HardwareDto createHardware(@RequestBody HardwareDto hardwareData) {
         log.info("CreateHardware: hardwareData={}", hardwareData);
         return hardwareService.createHardware(hardwareData);
+    }
+
+    @GetMapping("/{hardwareId}")
+    public HardwareDto getHardwareById(@PathVariable long hardwareId) {
+        log.info("GetHardwareById: id={}", hardwareId);
+        return hardwareService.getHardwareById(hardwareId);
     }
 }

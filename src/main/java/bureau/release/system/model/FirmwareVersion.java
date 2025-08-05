@@ -5,8 +5,7 @@ import lombok.*;
 
 @Entity
 @Table(name = "firmware_to_release")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

@@ -1,7 +1,7 @@
 package bureau.release.system.controller;
 
-import bureau.release.system.model.ReleaseStatus;
 import bureau.release.system.service.dto.ReleaseDto;
+import bureau.release.system.service.dto.ReleaseStatusDto;
 import bureau.release.system.service.impl.ReleaseService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,10 +28,23 @@ public class ReleasesController {
         return releaseService.getAllReleases(page, size, missionId);
     }
 
+    @PostMapping
+    public ReleaseDto createRelease(@RequestBody ReleaseDto releaseData) {
+        ReleaseDto release = releaseService.createRelease(releaseData);
+        log.info("CreateRelease: releaseData={}", release);
+        return release;
+    }
+
     @GetMapping("/{releaseId}")
     public ReleaseDto getReleaseById(@PathVariable long releaseId) {
         log.info("GetReleaseById: id={}", releaseId);
         return releaseService.getReleaseById(releaseId);
+    }
+
+    @PostMapping("/{releaseId}")
+    public ReleaseDto uploadHarbor(@PathVariable long releaseId) {
+        log.info("Upload to Harbor: releaseId = {}", releaseId);
+        return releaseService.uploadReleaseToHarbor(releaseId);
     }
 
     @GetMapping(value = "/{releaseId}/tar", produces = "application/tar")
@@ -47,21 +60,8 @@ public class ReleasesController {
     }
 
     @GetMapping("/statuses")
-    public List<ReleaseStatus> getReleaseStatuses() {
+    public List<ReleaseStatusDto> getReleaseStatuses() {
         log.info("GetReleaseStatuses");
         return releaseService.getReleaseStatuses();
-    }
-
-    @PostMapping("/{releaseId}")
-    public ReleaseDto uploadHarbor(@PathVariable long releaseId) {
-        log.info("Upload to Harbor: releaseId = {}", releaseId);
-        return releaseService.uploadReleaseToHarbor(releaseId);
-    }
-
-    @PostMapping
-    public ReleaseDto createRelease(@RequestBody ReleaseDto releaseData) {
-        ReleaseDto release = releaseService.createRelease(releaseData);
-        log.info("CreateRelease: releaseData={}", release);
-        return release;
     }
 }

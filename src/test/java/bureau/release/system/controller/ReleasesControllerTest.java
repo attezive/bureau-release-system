@@ -1,6 +1,5 @@
 package bureau.release.system.controller;
 
-import bureau.release.system.model.ReleaseStatus;
 import bureau.release.system.service.dto.FirmwareVersionDto;
 import bureau.release.system.service.dto.ReleaseContentDto;
 import bureau.release.system.service.dto.ReleaseDto;
@@ -17,7 +16,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -224,12 +222,7 @@ class ReleasesControllerTest {
 
     @Test
     void getReleaseStatuses() throws Exception {
-        int i = 1;
-        List<ReleaseStatus> releaseStatusList = new ArrayList<>();
-        for (ReleaseStatusDto releaseStatusDto : ReleaseStatusDto.values()) {
-            ReleaseStatus releaseStatus = ReleaseStatus.builder().id(i++).name(releaseStatusDto.name()).build();
-            releaseStatusList.add(releaseStatus);
-        }
+        List<ReleaseStatusDto> releaseStatusList = List.of(ReleaseStatusDto.values());
 
         Mockito.when(releaseService.getReleaseStatuses()).thenReturn(releaseStatusList);
 
@@ -237,11 +230,11 @@ class ReleasesControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$").isNotEmpty())
-                .andExpect(jsonPath("$[0].name").value(ReleaseStatusDto.CREATED.name()))
-                .andExpect(jsonPath("$[1].name").value(ReleaseStatusDto.DOWNLOADING.name()))
-                .andExpect(jsonPath("$[2].name").value(ReleaseStatusDto.UPLOADING.name()))
-                .andExpect(jsonPath("$[3].name").value(ReleaseStatusDto.COMPLETED.name()))
-                .andExpect(jsonPath("$[4].name").value(ReleaseStatusDto.BUILD_ERROR.name()));
+                .andExpect(jsonPath("$[0]").value(ReleaseStatusDto.CREATED.name()))
+                .andExpect(jsonPath("$[1]").value(ReleaseStatusDto.DOWNLOADING.name()))
+                .andExpect(jsonPath("$[2]").value(ReleaseStatusDto.UPLOADING.name()))
+                .andExpect(jsonPath("$[3]").value(ReleaseStatusDto.COMPLETED.name()))
+                .andExpect(jsonPath("$[4]").value(ReleaseStatusDto.BUILD_ERROR.name()));
 
         Mockito.verify(releaseService, Mockito.times(1)).getReleaseStatuses();
     }

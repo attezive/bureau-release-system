@@ -65,7 +65,7 @@ public class OrasArtifactUploader implements ArtifactUploader {
         Process process = Runtime.getRuntime().exec(command);
         BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
         String line;
-        String digest = "";
+        String digest = null;
         while ((line = reader.readLine()) != null) {
             log.debug("Artifact Oras Upload : {}", line);
             if (line.contains("Digest")) {

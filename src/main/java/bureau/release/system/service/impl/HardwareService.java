@@ -26,13 +26,14 @@ public class HardwareService {
 
     @Transactional
     public HardwareDto createHardware(HardwareDto hardwareDto) {
-        log.debug("Create Firmware Set for Hardware {}", hardwareDto);
+        log.debug("Create Firmware Set for HardwareDto {}", hardwareDto);
         List<Firmware> firmwareList = new ArrayList<>();
         for (Long firmwareId : hardwareDto.getFirmwareIds()) {
             Firmware firmware = firmwareDao.findById(firmwareId)
                     .orElseThrow(() -> new EntityNotFoundException("Firmware not found"));
             firmwareList.add(firmware);
         }
+        log.debug("Create Hardware for HardwareDto {} and Firmware {}", hardwareDto, firmwareList);
         Hardware hardware = hardwareMapper.toEntity(hardwareDto, firmwareList, new ArrayList<>());
         return hardwareMapper.toDto(hardwareDao.save(hardware));
     }
@@ -53,6 +54,7 @@ public class HardwareService {
     public HardwareDto getHardwareById(long hardwareId) {
         Hardware hardware = hardwareDao.findById(hardwareId)
                 .orElseThrow(() -> new EntityNotFoundException("Hardware not found"));
+        log.debug("Get Hardware {} for HardwareId {}", hardware, hardwareId);
         return hardwareMapper.toDto(hardware);
     }
 }

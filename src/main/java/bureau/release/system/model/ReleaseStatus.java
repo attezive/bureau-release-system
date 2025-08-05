@@ -5,8 +5,7 @@ import lombok.*;
 
 @Entity
 @Table(name = "release_statuses")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

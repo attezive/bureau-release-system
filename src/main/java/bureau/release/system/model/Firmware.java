@@ -7,9 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Data
 @Table(name = "firmware")
-@Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

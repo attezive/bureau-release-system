@@ -32,13 +32,15 @@ public class FirmwareService {
         FirmwareType firmwareType = firmwareTypeDao.findByName(firmwareDto.getType())
                 .orElseThrow(() -> new EntityNotFoundException("Type not found"));
         Firmware firmware = firmwareMapper.toEntity(firmwareDto, firmwareType);
+        log.debug("Create Firmware {} for FirmwareDto {}", firmware, firmwareDto);
         return firmwareMapper.toDto(firmwareDao.save(firmware));
     }
 
     @Transactional(readOnly = true)
-    public FirmwareDto getFirmwareById(long id) {
-        Firmware firmware = firmwareDao.findById(id)
+    public FirmwareDto getFirmwareById(long firmwareId) {
+        Firmware firmware = firmwareDao.findById(firmwareId)
                 .orElseThrow(() -> new EntityNotFoundException("Firmware not found"));
+        log.debug("Get Firmware {} for FirmwareId {}", firmware, firmwareId);
         return firmwareMapper.toDto(firmware);
     }
 

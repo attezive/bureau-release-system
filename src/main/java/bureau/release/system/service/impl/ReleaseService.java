@@ -53,6 +53,7 @@ public class ReleaseService {
 
         ReleaseDto resultReleaseDto = releaseMapper.toDto(release, firmwareVersionMapper);
         List<ReleaseContentDto> releaseContent = createReleaseContent(releaseDto, release);
+        log.debug("Create release with content: {}", releaseContent);
         resultReleaseDto.setReleaseContent(releaseContent);
         return resultReleaseDto;
     }
@@ -70,6 +71,13 @@ public class ReleaseService {
                         .orElseThrow(() -> new EntityNotFoundException("Firmware not found"));
                 Hardware hardware = hardwareDao.findById(firmwareVersionDto.getHardwareId())
                         .orElseThrow(() -> new EntityNotFoundException("Hardware not found"));
+
+                if (!hardware.getFirmwareList().contains(firmware)) {
+                    throw new EntityNotFoundException(
+                            String.format("Firmware %s(id %d) is not represented for Hardware %s(id %d)",
+                                    firmware.getName(), firmwareVersionDto.getFirmwareId(),
+                                    hardware.getName(), firmwareVersionDto.getHardwareId()));
+                }
 
                 FirmwareVersion firmwareVersion = firmwareVersionMapper
                         .toEntity(firmwareVersionDto, firmware, hardware, release);
@@ -145,13 +153,17 @@ public class ReleaseService {
     }
 
     @Transactional(readOnly = true)
-    public List<ReleaseStatus> getReleaseStatuses() {
-        return releaseStatusDao.findAll();
+    public List<ReleaseStatusDto> getReleaseStatuses() {
+        List<ReleaseStatus> releaseStatuses = releaseStatusDao.findAll();
+        log.debug("Get Release Status Dtos: releaseStatuses={}", releaseStatuses);
+        return releaseStatuses.stream().map(
+                releaseStatus -> ReleaseStatusDto.valueOf(releaseStatus.getName())).toList();
     }
 
     public StreamingResponseBody getTar(long releaseId) {
         Release release = releaseDao.findById(releaseId)
                 .orElseThrow(() -> new EntityNotFoundException("Release not found"));
+        log.debug("Get Tar: Release {}", release);
         return outputStream ->
                 artifactDownloader.loadReleaseContent(release, outputStream);
     }
@@ -159,6 +171,7 @@ public class ReleaseService {
     public ReleaseDto uploadReleaseToHarbor(long releaseId) {
         Release release = releaseDao.findById(releaseId)
                 .orElseThrow(() -> new EntityNotFoundException("Release not found"));
+        log.debug("Upload Harbor: Release {}", release);
 
         ByteArrayOutputStream outputStream;
         try {
@@ -171,12 +184,13 @@ public class ReleaseService {
         String digest;
         try {
             digest = uploadRelease(release, outputStream);
-        }  catch (ReleaseSystemException e) {
+        } catch (ReleaseSystemException e) {
             setReleaseStatus(release, ReleaseStatusDto.BUILD_ERROR);
             throw e;
         }
 
         release.setDigest(digest);
+        log.debug("Digest updated for release id {}: {}", releaseId, digest);
         setReleaseStatus(release, ReleaseStatusDto.COMPLETED);
         return releaseMapper.toDto(release, firmwareVersionMapper);
     }
@@ -184,12 +198,14 @@ public class ReleaseService {
     private ByteArrayOutputStream downloadRelease(Release release) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         setReleaseStatus(release, ReleaseStatusDto.DOWNLOADING);
+        log.debug("Download data for release id {}", release.getId());
         artifactDownloader.loadReleaseContent(release, outputStream);
         return outputStream;
     }
 
     private String uploadRelease(Release release, ByteArrayOutputStream outputStream) {
         setReleaseStatus(release, ReleaseStatusDto.UPLOADING);
+        log.debug("Upload data release id {}", release.getId());
         return artifactUploader.uploadArtifact(outputStream,
                 release.getName() + ".tar",
                 release.getOciName(),

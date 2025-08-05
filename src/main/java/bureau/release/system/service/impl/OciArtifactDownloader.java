@@ -1,6 +1,5 @@
 package bureau.release.system.service.impl;
 
-import bureau.release.system.config.OciRegistryProperties;
 import bureau.release.system.model.Firmware;
 import bureau.release.system.model.FirmwareVersion;
 import bureau.release.system.model.Hardware;
@@ -29,17 +28,14 @@ import java.util.*;
 @RequiredArgsConstructor
 public class OciArtifactDownloader implements ArtifactDownloader {
     private final OciRegistryClient ociClient;
-    private final OciRegistryProperties properties;
 
     @Override
     public Manifest getManifest(String repositoryName, String reference) {
         log.debug("Getting Manifest for Reference {} from Repository {}", reference,  repositoryName);
-        Manifest manifest = ociClient.getManifest(
-                repositoryName,
-                reference,
-                getBasicAuthHeader());
+        Manifest manifest = ociClient.getManifest(repositoryName, reference);
         manifest.setName(repositoryName);
         manifest.setReference(reference);
+        log.debug("Manifest {} for Reference {} has been successfully retrieved", manifest, reference);
         return manifest;
     }
 
@@ -67,6 +63,7 @@ public class OciArtifactDownloader implements ArtifactDownloader {
             Firmware firmware = firmwareVersion.getFirmware();
             Hardware hardware = firmwareVersion.getHardware();
             String dirEntryName = hardware.getName();
+
             if (!createdDirectories.contains(dirEntryName)) {
                 TarArchiveEntry dirEntry = new TarArchiveEntry(dirEntryName+"/"+firmware.getName());
                 dirEntry.setMode(TarArchiveEntry.DEFAULT_DIR_MODE);
@@ -88,7 +85,7 @@ public class OciArtifactDownloader implements ArtifactDownloader {
                               String repositoryName) throws IOException {
         String fileName = dirName + "/" + manifestLayer.getAnnotations().getTitle();
         log.debug("Adding File {} to Tar", fileName);
-        try (Response response = ociClient.getBlob(repositoryName, manifestLayer.getDigest(), getBasicAuthHeader());
+        try (Response response = ociClient.getBlob(repositoryName, manifestLayer.getDigest());
              InputStream fileStream = response.body().asInputStream()) {
             TarArchiveEntry entry = new TarArchiveEntry(fileName);
             String contentLength = response.headers().get("Content-Length").stream()
@@ -106,7 +103,7 @@ public class OciArtifactDownloader implements ArtifactDownloader {
     public List<Manifest> getArtifacts(String repositoryName) {
         log.debug("Getting Artifacts for Repository {}", repositoryName);
 
-        ResponseEntity<TagList> response = ociClient.getArtifactTagList(repositoryName, getBasicAuthHeader());
+        ResponseEntity<TagList> response = ociClient.getArtifactTagList(repositoryName);
         TagList tagList = response.getBody();
         log.debug("TagList: {}", tagList);
         if (tagList == null) {
@@ -114,11 +111,5 @@ public class OciArtifactDownloader implements ArtifactDownloader {
         }
 
         return tagList.getTags().stream().map(tag -> getManifest(repositoryName, tag)).toList();
-    }
-
-    private String getBasicAuthHeader() {
-        String credentials = properties.ecrUsername() + ":" + properties.ecrPassword();
-        String encoded = Base64.getEncoder().encodeToString(credentials.getBytes());
-        return "Basic " + encoded;
     }
 }

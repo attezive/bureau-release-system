@@ -26,6 +26,12 @@ public class FirmwareController {
         return firmwareService.getAllFirmware(page, size);
     }
 
+    @PostMapping
+    public FirmwareDto createFirmware(@RequestBody FirmwareDto firmwareData) {
+        log.info("CreateFirmware: {}", firmwareData);
+        return firmwareService.createFirmware(firmwareData);
+    }
+
     @GetMapping("/{firmwareId}")
     public FirmwareDto getFirmwareById(@PathVariable long firmwareId) {
         log.info("GetFirmwareById: id={}", firmwareId);
@@ -37,12 +43,6 @@ public class FirmwareController {
         log.info("GetFirmwareVersions: id={}", firmwareId);
         FirmwareDto firmware = firmwareService.getFirmwareById(firmwareId);
         return artifactDownloader.getArtifacts(firmware.getOciName());
-    }
-
-    @PostMapping
-    public FirmwareDto createFirmware(@RequestBody FirmwareDto firmwareData) {
-        log.info("CreateFirmware: {}", firmwareData);
-        return firmwareService.createFirmware(firmwareData);
     }
 
     @GetMapping("/types")
