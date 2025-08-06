@@ -2,9 +2,14 @@ package bureau.release.system.controller;
 
 import bureau.release.system.service.dto.ReleaseDto;
 import bureau.release.system.service.dto.ReleaseStatusDto;
+import bureau.release.system.service.dto.error.ErrorDto;
+import bureau.release.system.service.dto.error.ValidationErrorResponse;
 import bureau.release.system.service.impl.ReleaseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +32,12 @@ public class ReleasesController {
     @GetMapping
     @Operation(
             summary = "Получение списка релизов",
-            description = "Позволяет получить список прошивок с учетом пагинации и возможности фильтрации по миссии"
+            description = "Позволяет получить список прошивок с учетом пагинации и возможности фильтрации по миссии",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Успешное получение"),
+                    @ApiResponse(responseCode = "400", description = "Правильный тип параметра, ошибка в значении",
+                            content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class)))
+            }
     )
     public List<ReleaseDto> getReleases(
             @RequestParam(required = false, defaultValue = "0") @Parameter(description = "Номер страницы") int page,
@@ -41,7 +51,14 @@ public class ReleasesController {
     @PostMapping
     @Operation(
             summary = "Создание нового релиза",
-            description = "Позволяет создать новый релиз, исходя из переданных данных"
+            description = "Позволяет создать новый релиз, исходя из переданных данных",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Успешное создание"),
+                    @ApiResponse(responseCode = "400", description = "Неправильне тело девайса",
+                            content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class))),
+                    @ApiResponse(responseCode = "404", description = "Не найдены указанные данные",
+                            content = @Content(schema = @Schema(implementation = ErrorDto.class)))
+            }
     )
     public ReleaseDto createRelease(@RequestBody ReleaseDto releaseData) {
         ReleaseDto release = releaseService.createRelease(releaseData);
@@ -52,7 +69,14 @@ public class ReleasesController {
     @GetMapping("/{releaseId}")
     @Operation(
             summary = "Получение релиза по id",
-            description = "Позволяет получить данные о релизе, исходя из переданного id"
+            description = "Позволяет получить данные о релизе, исходя из переданного id",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Успешное получение"),
+                    @ApiResponse(responseCode = "400", description = "Неправильный id",
+                            content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class))),
+                    @ApiResponse(responseCode = "404", description = "Не найден релиз по id",
+                            content = @Content(schema = @Schema(implementation = ErrorDto.class)))
+            }
     )
     public ReleaseDto getReleaseById(
             @PathVariable @Parameter(description = "Id запрашиваемого релиза", example = "1") long releaseId
@@ -64,7 +88,18 @@ public class ReleasesController {
     @PostMapping("/{releaseId}")
     @Operation(
             summary = "Выгрузка на Harbor собранного релиза по id",
-            description = "Позволяет собрать и выгрузить на Harbor релиз, исходя из переданного id"
+            description = "Позволяет собрать и выгрузить на Harbor релиз, исходя из переданного id",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Успешное получение"),
+                    @ApiResponse(responseCode = "400", description = "Неправильный id",
+                            content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class))),
+                    @ApiResponse(responseCode = "402", description = "Ошибка в работе с Harbor",
+                            content = @Content(schema = @Schema(implementation = ErrorDto.class))),
+                    @ApiResponse(responseCode = "404", description = "Не найдены указанные данные",
+                            content = @Content(schema = @Schema(implementation = ErrorDto.class))),
+                    @ApiResponse(responseCode = "500", description = "Ошибка в сборке файла релиза",
+                            content = @Content(schema = @Schema(implementation = ErrorDto.class)))
+            }
     )
     public ReleaseDto uploadHarbor(
             @PathVariable @Parameter(description = "Id выгружаемого релиза", example = "1") long releaseId
@@ -76,7 +111,18 @@ public class ReleasesController {
     @GetMapping(value = "/{releaseId}/tar", produces = "application/tar")
     @Operation(
             summary = "Выгрузка клиенту собранного релиза по id",
-            description = "Позволяет собрать и потоково выгрузить клиенту релиз, исходя из переданного id"
+            description = "Позволяет собрать и потоково выгрузить клиенту релиз, исходя из переданного id",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Успешное получение"),
+                    @ApiResponse(responseCode = "400", description = "Неправильный id",
+                            content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class))),
+                    @ApiResponse(responseCode = "402", description = "Ошибка в работе с Harbor",
+                            content = @Content(schema = @Schema(implementation = ErrorDto.class))),
+                    @ApiResponse(responseCode = "404", description = "Не найдены указанные данные",
+                            content = @Content(schema = @Schema(implementation = ErrorDto.class))),
+                    @ApiResponse(responseCode = "500", description = "Ошибка в сборке файла релиза",
+                            content = @Content(schema = @Schema(implementation = ErrorDto.class)))
+            }
     )
     public ResponseEntity<StreamingResponseBody> getTar(
             @PathVariable @Parameter(description = "Id выгружаемого релиза", example = "1") long releaseId

@@ -2,9 +2,13 @@ package bureau.release.system.controller;
 
 import bureau.release.system.service.dto.error.ErrorDto;
 import bureau.release.system.service.dto.MissionDto;
+import bureau.release.system.service.dto.error.ValidationErrorResponse;
 import bureau.release.system.service.impl.MissionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +37,14 @@ public class MissionsController {
     @PostMapping
     @Operation(
             summary = "Создание новой миссии",
-            description = "Позволяет создать новую миссию, исходя из переданных данных"
+            description = "Позволяет создать новую миссию, исходя из переданных данных",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Успешное создание"),
+                    @ApiResponse(responseCode = "400", description = "Неправильне тело миссии",
+                            content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class))),
+                    @ApiResponse(responseCode = "404", description = "Не найдены указанные данные",
+                            content = @Content(schema = @Schema(implementation = ErrorDto.class)))
+            }
     )
     public MissionDto createMission(@RequestBody MissionDto missionData) {
         log.info("CreateMission: missionData={}", missionData);
@@ -43,7 +54,14 @@ public class MissionsController {
     @GetMapping("/{missionId}")
     @Operation(
             summary = "Получение миссии по id",
-            description = "Позволяет получить данные о миссии, исходя из переданного id"
+            description = "Позволяет получить данные о миссии, исходя из переданного id",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Успешное получение"),
+                    @ApiResponse(responseCode = "400", description = "Неправильный id",
+                            content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class))),
+                    @ApiResponse(responseCode = "404", description = "Не найден девайс по id",
+                            content = @Content(schema = @Schema(implementation = ErrorDto.class)))
+            }
     )
     public MissionDto getMissionById(
             @PathVariable @Parameter(description = "Id запрашиваемой миссии", example = "1") int missionId

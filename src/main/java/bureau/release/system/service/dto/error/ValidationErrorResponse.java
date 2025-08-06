@@ -1,6 +1,11 @@
 package bureau.release.system.service.dto.error;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.util.List;
 
-public record ValidationErrorResponse(List<Violation> violations) {
-}
+@Schema(description = "Сущность валидационной ошибки")
+public record ValidationErrorResponse(
+        @Schema(description = "Ошибочные атрибуты")
+        List<Violation> violations
+) {}

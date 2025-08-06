@@ -8,6 +8,6 @@ import lombok.Data;
 @Data
 @Schema(description = "Сущность ошибки")
 public class ErrorDto {
-    @Schema(description = "Сообщение ошибки")
+    @Schema(description = "Сообщение ошибки", example = "Some error info")
     private String message;
 }
