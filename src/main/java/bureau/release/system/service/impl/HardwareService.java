@@ -8,16 +8,20 @@ import bureau.release.system.model.Hardware;
 import bureau.release.system.service.dto.HardwareDto;
 import bureau.release.system.service.mapping.HardwareMapper;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.*;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@Validated
 public class HardwareService {
     private final HardwareDao hardwareDao;
     private final MissionDao missionDao;
@@ -25,7 +29,7 @@ public class HardwareService {
     private final HardwareMapper hardwareMapper;
 
     @Transactional
-    public HardwareDto createHardware(HardwareDto hardwareDto) {
+    public HardwareDto createHardware(@Valid HardwareDto hardwareDto) {
         log.debug("Create Firmware Set for HardwareDto {}", hardwareDto);
         List<Firmware> firmwareList = new ArrayList<>();
         for (Long firmwareId : hardwareDto.getFirmwareIds()) {
@@ -44,14 +48,14 @@ public class HardwareService {
     }
 
     @Transactional(readOnly = true)
-    public List<HardwareDto> getHardwareByMissionId(int missionId) {
+    public List<HardwareDto> getHardwareByMissionId(@Positive int missionId) {
         return missionDao.findById(missionId)
                 .orElseThrow(() -> new EntityNotFoundException("Mission not found"))
                 .getHardwareList().stream().map(hardwareMapper::toDto).toList();
     }
 
     @Transactional(readOnly = true)
-    public HardwareDto getHardwareById(long hardwareId) {
+    public HardwareDto getHardwareById(@Positive long hardwareId) {
         Hardware hardware = hardwareDao.findById(hardwareId)
                 .orElseThrow(() -> new EntityNotFoundException("Hardware not found"));
         log.debug("Get Hardware {} for HardwareId {}", hardware, hardwareId);

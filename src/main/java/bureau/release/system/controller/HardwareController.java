@@ -39,10 +39,7 @@ public class HardwareController {
             summary = "Создание нового девайса",
             description = "Позволяет создать новый девайс, исходя из переданных данных"
     )
-    public HardwareDto createHardware(
-            @RequestBody @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Данные создаваемого девайса")
-            HardwareDto hardwareData
-    ) {
+    public HardwareDto createHardware(@RequestBody HardwareDto hardwareData) {
         log.info("CreateHardware: hardwareData={}", hardwareData);
         return hardwareService.createHardware(hardwareData);
     }

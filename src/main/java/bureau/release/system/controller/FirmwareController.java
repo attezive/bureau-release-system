@@ -41,10 +41,7 @@ public class FirmwareController {
             summary = "Создание новой прошивки",
             description = "Позволяет создать новую прошивку, исходя из переданных данных"
     )
-    public FirmwareDto createFirmware(
-            @RequestBody @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Данные создаваемой прошивки")
-            FirmwareDto firmwareData
-    ) {
+    public FirmwareDto createFirmware(@RequestBody FirmwareDto firmwareData) {
         log.info("CreateFirmware: {}", firmwareData);
         return firmwareService.createFirmware(firmwareData);
     }

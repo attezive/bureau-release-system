@@ -12,12 +12,16 @@ import bureau.release.system.service.dto.ReleaseStatusDto;
 import bureau.release.system.service.mapping.FirmwareVersionMapper;
 import bureau.release.system.service.mapping.ReleaseMapper;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.ByteArrayOutputStream;
@@ -27,6 +31,7 @@ import java.util.*;
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@Validated
 public class ReleaseService {
     private final ReleaseDao releaseDao;
     private final ReleaseStatusDao releaseStatusDao;
@@ -40,7 +45,7 @@ public class ReleaseService {
     private final ReleaseMapper releaseMapper;
 
     @Transactional
-    public ReleaseDto createRelease(ReleaseDto releaseDto) {
+    public ReleaseDto createRelease(@Valid ReleaseDto releaseDto) {
         releaseDto.setReleaseDate(LocalDate.now());
         Release release = releaseMapper.toEntity(
                 releaseDto,
@@ -134,7 +139,7 @@ public class ReleaseService {
     }
 
     @Transactional(readOnly = true)
-    public List<ReleaseDto> getAllReleases(int page, int size, Integer missionId) {
+    public List<ReleaseDto> getAllReleases(int page, int size, @Min(1) Integer missionId) {
         Pageable pageable = PageRequest.of(page, size);
         List<ReleaseDto> releases = new ArrayList<>();
         releaseDao.findAll(pageable).forEach(release -> {
@@ -146,7 +151,7 @@ public class ReleaseService {
     }
 
     @Transactional(readOnly = true)
-    public ReleaseDto getReleaseById(long releaseId) throws EntityNotFoundException {
+    public ReleaseDto getReleaseById(@Positive long releaseId) throws EntityNotFoundException {
         Release release = releaseDao.findById(releaseId)
                 .orElseThrow(() -> new EntityNotFoundException("Release not found"));
         return releaseMapper.toDto(release, firmwareVersionMapper);
@@ -160,7 +165,7 @@ public class ReleaseService {
                 releaseStatus -> ReleaseStatusDto.valueOf(releaseStatus.getName())).toList();
     }
 
-    public StreamingResponseBody getTar(long releaseId) {
+    public StreamingResponseBody getTar(@Positive long releaseId) {
         Release release = releaseDao.findById(releaseId)
                 .orElseThrow(() -> new EntityNotFoundException("Release not found"));
         log.debug("Get Tar: Release {}", release);
@@ -168,7 +173,7 @@ public class ReleaseService {
                 artifactDownloader.loadReleaseContent(release, outputStream);
     }
 
-    public ReleaseDto uploadReleaseToHarbor(long releaseId) {
+    public ReleaseDto uploadReleaseToHarbor(@Positive long releaseId) {
         Release release = releaseDao.findById(releaseId)
                 .orElseThrow(() -> new EntityNotFoundException("Release not found"));
         log.debug("Upload Harbor: Release {}", release);

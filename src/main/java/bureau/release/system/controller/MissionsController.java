@@ -1,6 +1,6 @@
 package bureau.release.system.controller;
 
-import bureau.release.system.service.dto.ErrorDto;
+import bureau.release.system.service.dto.error.ErrorDto;
 import bureau.release.system.service.dto.MissionDto;
 import bureau.release.system.service.impl.MissionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,10 +35,7 @@ public class MissionsController {
             summary = "Создание новой миссии",
             description = "Позволяет создать новую миссию, исходя из переданных данных"
     )
-    public MissionDto createMission(
-            @RequestBody @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Данные создаваемой миссии")
-            MissionDto missionData
-    ) {
+    public MissionDto createMission(@RequestBody MissionDto missionData) {
         log.info("CreateMission: missionData={}", missionData);
         return missionService.createMission(missionData);
     }

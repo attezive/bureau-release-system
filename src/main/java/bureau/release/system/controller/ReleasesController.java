@@ -43,10 +43,7 @@ public class ReleasesController {
             summary = "Создание нового релиза",
             description = "Позволяет создать новый релиз, исходя из переданных данных"
     )
-    public ReleaseDto createRelease(
-            @RequestBody @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Данные создаваемого релиза")
-            ReleaseDto releaseData
-    ) {
+    public ReleaseDto createRelease(@RequestBody ReleaseDto releaseData) {
         ReleaseDto release = releaseService.createRelease(releaseData);
         log.info("CreateRelease: releaseData={}", release);
         return release;

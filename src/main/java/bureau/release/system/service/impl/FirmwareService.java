@@ -9,18 +9,23 @@ import bureau.release.system.service.dto.FirmwareTypeDto;
 import bureau.release.system.service.mapping.FirmwareMapper;
 import bureau.release.system.service.mapping.FirmwareTypeMapper;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@Validated
 public class FirmwareService {
     private final FirmwareDao firmwareDao;
     private final FirmwareTypeDao firmwareTypeDao;
@@ -28,7 +33,7 @@ public class FirmwareService {
     private final FirmwareTypeMapper firmwareTypeMapper;
 
     @Transactional
-    public FirmwareDto createFirmware(FirmwareDto firmwareDto) {
+    public FirmwareDto createFirmware(@Valid FirmwareDto firmwareDto) {
         FirmwareType firmwareType = firmwareTypeDao.findByName(firmwareDto.getType())
                 .orElseThrow(() -> new EntityNotFoundException("Type not found"));
         Firmware firmware = firmwareMapper.toEntity(firmwareDto, firmwareType);
@@ -37,7 +42,7 @@ public class FirmwareService {
     }
 
     @Transactional(readOnly = true)
-    public FirmwareDto getFirmwareById(long firmwareId) {
+    public FirmwareDto getFirmwareById(@Positive long firmwareId) {
         Firmware firmware = firmwareDao.findById(firmwareId)
                 .orElseThrow(() -> new EntityNotFoundException("Firmware not found"));
         log.debug("Get Firmware {} for FirmwareId {}", firmware, firmwareId);
@@ -45,7 +50,7 @@ public class FirmwareService {
     }
 
     @Transactional(readOnly = true)
-    public List<FirmwareDto> getAllFirmware(int page, int size) {
+    public List<FirmwareDto> getAllFirmware(@PositiveOrZero int page, @Positive int size) {
         Pageable pageable = PageRequest.of(page, size);
         return firmwareDao.findAll(pageable).map(firmwareMapper::toDto).toList();
     }

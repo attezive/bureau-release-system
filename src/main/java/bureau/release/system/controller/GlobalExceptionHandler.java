@@ -1,14 +1,19 @@
 package bureau.release.system.controller;
 
 import bureau.release.system.exception.*;
-import bureau.release.system.service.dto.ErrorDto;
+import bureau.release.system.service.dto.error.ErrorDto;
+import bureau.release.system.service.dto.error.ValidationErrorResponse;
+import bureau.release.system.service.dto.error.Violation;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.PropertyValueException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+
+import java.util.List;
 
 @ControllerAdvice
 @Slf4j
@@ -23,7 +28,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorDto> handleIllegalArgumentException(IllegalArgumentException exception) {
         log.error("IllegalArgumentException: {} from {}", exception.getMessage(),  exception.getStackTrace()[0]);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorDto("Illegal argument " + exception.getMessage()));
+                .body(new ErrorDto("Illegal argument: " + exception.getMessage()));
     }
 
     @ExceptionHandler(OrasException.class)
@@ -54,5 +59,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorDto> handlePropertyValueException(PropertyValueException exception) {
         log.error("PropertyValueException: {} from {}", exception.getMessage(), exception.getStackTrace()[0]);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorDto(exception.getMessage()));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ValidationErrorResponse> handleConstraintViolationException(ConstraintViolationException exception) {
+        log.error("ConstraintViolationException: {} from {}", exception.getMessage(), exception.getStackTrace()[0]);
+        List<Violation> violations = exception.getConstraintViolations().stream()
+                .map(
+                        violation -> new Violation(
+                                violation.getPropertyPath().toString().split("\\.", 2)[1],
+                                violation.getMessage()
+                        )
+                ).toList();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ValidationErrorResponse(violations));
     }
 }

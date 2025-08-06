@@ -7,23 +7,27 @@ import bureau.release.system.dal.MissionDao;
 import bureau.release.system.service.dto.MissionDto;
 import bureau.release.system.service.mapping.MissionMapper;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.*;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@Validated
 public class MissionService {
     private final MissionDao missionDao;
     private final HardwareDao hardwareDao;
     private final MissionMapper missionMapper;
 
     @Transactional
-    public MissionDto createMission(MissionDto missionDto) throws EntityNotFoundException {
+    public MissionDto createMission(@Valid MissionDto missionDto) throws EntityNotFoundException {
         log.debug("Creating Hardware Set for Mission {}", missionDto);
         List<Hardware> hardwareList = new ArrayList<>();
         for (Long hardwareId : missionDto.getHardwareIds()) {
@@ -42,7 +46,7 @@ public class MissionService {
     }
 
     @Transactional(readOnly = true)
-    public MissionDto getMissionById(int missionId) throws EntityNotFoundException {
+    public MissionDto getMissionById(@Positive int missionId) throws EntityNotFoundException {
         Mission mission = missionDao.findById(missionId)
                 .orElseThrow(() -> new EntityNotFoundException("Mission not found"));
         log.debug("Get Mission {} for MissionDto id {}", mission, missionId);
@@ -50,7 +54,7 @@ public class MissionService {
     }
 
     @Transactional
-    public void deleteMission(int missionId) {
+    public void deleteMission(@Positive int missionId) {
         missionDao.deleteById(missionId);
     }
 }
