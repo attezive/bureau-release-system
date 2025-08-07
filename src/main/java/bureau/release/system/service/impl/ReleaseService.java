@@ -56,7 +56,7 @@ public class ReleaseService {
         release = releaseDao.save(release);
         release.setFirmwareVersions(new ArrayList<>());
 
-        ReleaseDto resultReleaseDto = releaseMapper.toDto(release, firmwareVersionMapper);
+        ReleaseDto resultReleaseDto = releaseMapper.toDto(release);
         List<ReleaseContentDto> releaseContent = createReleaseContent(releaseDto, release);
         log.debug("Create release with content: {}", releaseContent);
         resultReleaseDto.setReleaseContent(releaseContent);
@@ -144,7 +144,7 @@ public class ReleaseService {
         List<ReleaseDto> releases = new ArrayList<>();
         releaseDao.findAll(pageable).forEach(release -> {
             if (missionId == null || release.getMission().getId().equals(missionId)) {
-                releases.add(releaseMapper.toDto(release, firmwareVersionMapper));
+                releases.add(releaseMapper.toDto(release));
             }
         });
         return releases;
@@ -154,7 +154,7 @@ public class ReleaseService {
     public ReleaseDto getReleaseById(@Positive long releaseId) throws EntityNotFoundException {
         Release release = releaseDao.findById(releaseId)
                 .orElseThrow(() -> new EntityNotFoundException("Release not found"));
-        return releaseMapper.toDto(release, firmwareVersionMapper);
+        return releaseMapper.toDto(release);
     }
 
     @Transactional(readOnly = true)
@@ -197,7 +197,7 @@ public class ReleaseService {
         release.setDigest(digest);
         log.debug("Digest updated for release id {}: {}", releaseId, digest);
         setReleaseStatus(release, ReleaseStatusDto.COMPLETED);
-        return releaseMapper.toDto(release, firmwareVersionMapper);
+        return releaseMapper.toDto(release);
     }
 
     private ByteArrayOutputStream downloadRelease(Release release) {
