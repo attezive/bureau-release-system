@@ -20,7 +20,7 @@ public class FirmwareVersion {
     private Firmware firmware;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "hardware_id")
+    @JoinColumn(name = "hardware_id", nullable = false)
     private Hardware hardware;
 
     @ManyToOne(fetch = FetchType.LAZY)

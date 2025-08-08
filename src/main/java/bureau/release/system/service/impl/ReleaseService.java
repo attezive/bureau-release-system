@@ -182,7 +182,7 @@ public class ReleaseService {
         try {
             outputStream = downloadRelease(release);
         } catch (ReleaseSystemException e) {
-            setReleaseStatus(release, ReleaseStatusDto.BUILD_ERROR);
+            setReleaseStatus(release, ReleaseStatusDto.BUILD_DOWNLOADING_ERROR);
             throw e;
         }
 
@@ -190,7 +190,7 @@ public class ReleaseService {
         try {
             digest = uploadRelease(release, outputStream);
         } catch (ReleaseSystemException e) {
-            setReleaseStatus(release, ReleaseStatusDto.BUILD_ERROR);
+            setReleaseStatus(release, ReleaseStatusDto.BUILD_UPLOADING_ERROR);
             throw e;
         }
 

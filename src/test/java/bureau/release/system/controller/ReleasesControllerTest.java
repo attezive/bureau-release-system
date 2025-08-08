@@ -234,7 +234,7 @@ class ReleasesControllerTest {
                 .andExpect(jsonPath("$[1]").value(ReleaseStatusDto.DOWNLOADING.name()))
                 .andExpect(jsonPath("$[2]").value(ReleaseStatusDto.UPLOADING.name()))
                 .andExpect(jsonPath("$[3]").value(ReleaseStatusDto.COMPLETED.name()))
-                .andExpect(jsonPath("$[4]").value(ReleaseStatusDto.BUILD_ERROR.name()));
+                .andExpect(jsonPath("$[4]").value(ReleaseStatusDto.BUILD_DOWNLOADING_ERROR.name()));
 
         Mockito.verify(releaseService, Mockito.times(1)).getReleaseStatuses();
     }

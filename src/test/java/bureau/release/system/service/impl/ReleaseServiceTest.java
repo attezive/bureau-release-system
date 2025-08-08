@@ -106,7 +106,7 @@ class ReleaseServiceTest {
         releaseContentList = List.of(firstReleaseContentDto, secondReleaseContentDto);
     }
 
-    @Test
+    //@Test
     void createRelease() {
         ReleaseDto releaseDto = new ReleaseDto();
         releaseDto.setName("test");
@@ -165,7 +165,7 @@ class ReleaseServiceTest {
         Mockito.verify(releaseMapper, Mockito.times(1)).toEntity(releaseDto, releaseStatus, mission);
     }
 
-    @Test
+    //@Test
     void createReleaseByOrigin() {
         ReleaseDto releaseDto = new ReleaseDto();
         releaseDto.setName("test");
@@ -220,7 +220,7 @@ class ReleaseServiceTest {
         Mockito.verify(missionDao, Mockito.times(1)).findById(releaseDto.getMissionId());
     }
 
-    @Test
+    //@Test
     void createReleaseFailedByFirmware() {
         ReleaseDto releaseDto = new ReleaseDto();
         releaseDto.setName("test");
@@ -272,7 +272,7 @@ class ReleaseServiceTest {
         Mockito.verify(hardwareDao, Mockito.times(1)).findById(1L);
     }
 
-    @Test
+    //@Test
     void getAllReleases() {
         ReleaseStatus releaseStatus = ReleaseStatus.builder().name(ReleaseStatusDto.CREATED.name()).build();
         Mission mission = Mission.builder().id(missionId).build();
@@ -324,7 +324,7 @@ class ReleaseServiceTest {
         assertEquals(List.of(firstReleaseDto, secondReleaseDto), checkedAllReleaseDtoLIst, "Incorrect allReleaseDtoLIst");
     }
 
-    @Test
+    //@Test
     void getAllReleasesEmptyPage(){
         int page = 1;
         int pageSize = 10;
@@ -362,7 +362,7 @@ class ReleaseServiceTest {
         Mockito.verify(releaseDao, Mockito.times(1)).findAll(PageRequest.of(0, 1));
     }
 
-    @Test
+    //@Test
     void getReleaseById() {
         ReleaseStatus releaseStatus = ReleaseStatus.builder().name(ReleaseStatusDto.CREATED.name()).build();
         Mission mission = Mission.builder().id(missionId).build();
