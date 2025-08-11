@@ -16,7 +16,7 @@ public class OrasArtifactUploader implements ArtifactUploader {
     private final OciRegistryProperties properties;
 
     public void login() throws IOException {
-        String command = String.format("oras login %s -u %s -p %s",
+        String command = String.format("oras login --plain-http %s -u %s -p %s",
                 properties.url().replace("http://", ""),
                 properties.ecrUsername(),
                 properties.ecrPassword());
@@ -36,10 +36,11 @@ public class OrasArtifactUploader implements ArtifactUploader {
 
     @Override
     public String uploadArtifact(ByteArrayOutputStream artifactBody, String artifactName, String ociName, String reference) {
+        artifactName = artifactName.replace(" ", "_");
         createFile(artifactBody, artifactName);
         log.debug("File created: {}", artifactName);
 
-        String command = String.format("oras push %s/%s:%s %s",
+        String command = String.format("oras push --plain-http %s/%s:%s %s",
                 properties.url().replace("http://", ""),
                 ociName,
                 reference,
