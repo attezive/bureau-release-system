@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
 class MissionServiceTest {
@@ -73,7 +74,7 @@ class MissionServiceTest {
                 .name(missionDto.getName())
                 .hardwareList(hardwareSet)
                 .build();
-        Mockito.when(missionDao.save(ArgumentMatchers.any(Mission.class))).thenReturn(mission);
+        Mockito.when(missionDao.save(eq(missionMapper.toEntity(missionDto, hardwareSet)))).thenReturn(mission);
 
         MissionDto missionDtoResult = missionService.createMission(missionDto);
 
@@ -83,8 +84,8 @@ class MissionServiceTest {
         Mockito.verify(hardwareDao, Mockito.times(1)).findById(firstHardwareId);
         Mockito.verify(hardwareDao, Mockito.times(1)).findById(secondHardwareId);
         Mockito.verify(missionMapper, Mockito.times(1)).toDto(mission);
-        Mockito.verify(missionMapper, Mockito.times(1)).toEntity(missionDto, hardwareSet);
-        Mockito.verify(missionDao, Mockito.times(1)).save(ArgumentMatchers.any(Mission.class));
+        Mockito.verify(missionMapper, Mockito.times(2)).toEntity(missionDto, hardwareSet);
+        Mockito.verify(missionDao, Mockito.times(1)).save(eq(missionMapper.toEntity(missionDto, hardwareSet)));
     }
 
     @Test
@@ -132,7 +133,7 @@ class MissionServiceTest {
 
         assertEquals(allMissions, missions, "Incorrect equals missions list");
         Mockito.verify(missionDao, Mockito.times(1)).findAll();
-        Mockito.verify(missionMapper, Mockito.times(missions.size())).toDto(ArgumentMatchers.any(Mission.class));
+        Mockito.verify(missionMapper, Mockito.times(missions.size())).toDto(any(Mission.class));
     }
 
     @Test
@@ -178,7 +179,7 @@ class MissionServiceTest {
 
     @Test
     void deleteMission() {
-        missionService.deleteMission(ArgumentMatchers.anyInt());
-        Mockito.verify(missionDao, Mockito.times(1)).deleteById(ArgumentMatchers.anyInt());
+        missionService.deleteMission(anyInt());
+        Mockito.verify(missionDao, Mockito.times(1)).deleteById(anyInt());
     }
 }

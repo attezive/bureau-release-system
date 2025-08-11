@@ -16,8 +16,10 @@ public class OrasArtifactUploader implements ArtifactUploader {
     private final OciRegistryProperties properties;
 
     public void login() throws IOException {
-        String command = String.format("oras login --plain-http %s -u %s -p %s",
-                properties.url().replace("http://", ""),
+        boolean isSecure = properties.url().contains("https");
+        String command = String.format("oras login%s %s -u %s -p %s",
+                isSecure ? "" : " --plain-http",
+                properties.url().replace("http://", "").replace("https://", ""),
                 properties.ecrUsername(),
                 properties.ecrPassword());
         log.debug("Execute command login: {}", command);
@@ -39,9 +41,11 @@ public class OrasArtifactUploader implements ArtifactUploader {
         artifactName = artifactName.replace(" ", "_");
         createFile(artifactBody, artifactName);
         log.debug("File created: {}", artifactName);
+        boolean isSecure = properties.url().contains("https");
 
-        String command = String.format("oras push --plain-http %s/%s:%s %s",
-                properties.url().replace("http://", ""),
+        String command = String.format("oras push%s %s/%s:%s %s",
+                isSecure ? "" : " --plain-http",
+                properties.url().replace("http://", "").replace("https://", ""),
                 ociName,
                 reference,
                 artifactName);
@@ -78,7 +82,7 @@ public class OrasArtifactUploader implements ArtifactUploader {
         BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
         while ((line = errorReader.readLine()) != null) {
             log.error("Artifact Oras Upload: {}", line);
-            if (line.contains("Error: basic credential not found")){
+            if (line.contains("Error: basic credential not found")) {
                 login();
                 digest = executeUploadCommand(command);
             }

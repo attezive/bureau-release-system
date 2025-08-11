@@ -7,6 +7,7 @@ import bureau.release.system.service.dto.error.Violation;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.NoHttpResponseException;
 import org.hibernate.PropertyValueException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -72,5 +73,11 @@ public class GlobalExceptionHandler {
                         )
                 ).toList();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ValidationErrorResponse(violations));
+    }
+
+    @ExceptionHandler(NoHttpResponseException.class)
+    public ResponseEntity<ErrorDto> handleNoHttpResponseException(NoHttpResponseException exception) {
+        log.error("NoHttpResponseException: {} from {}", exception.getMessage(), exception.getStackTrace()[0]);
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(new ErrorDto(exception.getMessage()));
     }
 }

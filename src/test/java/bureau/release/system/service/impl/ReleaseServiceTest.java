@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
 class ReleaseServiceTest {
@@ -106,7 +107,7 @@ class ReleaseServiceTest {
         releaseContentList = List.of(firstReleaseContentDto, secondReleaseContentDto);
     }
 
-    //@Test
+    @Test
     void createRelease() {
         ReleaseDto releaseDto = new ReleaseDto();
         releaseDto.setName("test");
@@ -118,28 +119,22 @@ class ReleaseServiceTest {
         ReleaseStatus releaseStatus = ReleaseStatus.builder().name(ReleaseStatusDto.CREATED.name()).build();
         Mission mission = Mission.builder().id(missionId).build();
 
-        Release savedRelease = Release
-                .builder()
-                .id(releaseId)
-                .name(releaseDto.getName())
-                .status(releaseStatus)
-                .ociName(releaseDto.getOciName())
-                .reference(releaseDto.getReference())
-                .mission(mission)
-                .releaseDate(LocalDate.now())
-                .build();
+        ReleaseDto mappedReleaseDto = new ReleaseDto(1L, releaseDto.getName(), LocalDate.now(),
+                releaseDto.getOciName(), releaseDto.getReference(), null, ReleaseStatusDto.CREATED,
+                1L, releaseDto.getMissionId(), null);
 
-        Release release = Release
-                .builder()
-                .id(releaseId)
-                .name(releaseDto.getName())
-                .status(releaseStatus)
-                .ociName(releaseDto.getOciName())
-                .reference(releaseDto.getReference())
-                .mission(mission)
-                .releaseDate(LocalDate.now())
-                .firmwareVersions(firmwareVersionList)
-                .build();
+        Release mappedRelease = Release.builder().name(releaseDto.getName()).status(releaseStatus)
+                .ociName(releaseDto.getOciName()).reference(releaseDto.getReference()).mission(mission)
+                .releaseDate(LocalDate.now()).firmwareVersions(new ArrayList<>()).build();
+
+        Release savedRelease = Release.builder().id(releaseId).name(releaseDto.getName()).status(releaseStatus)
+                .ociName(releaseDto.getOciName()).reference(releaseDto.getReference()).mission(mission)
+                .releaseDate(LocalDate.now()).build();
+
+        Release release = Release.builder().id(releaseId).name(releaseDto.getName()).status(releaseStatus)
+                .ociName(releaseDto.getOciName()).reference(releaseDto.getReference()).mission(mission)
+                .releaseDate(LocalDate.now()).firmwareVersions(firmwareVersionList).build();
+
         ReleaseDto correctReleaseDto = new ReleaseDto(release.getId(), release.getName(), release.getReleaseDate(),
                 release.getOciName(), release.getReference(), release.getDigest(),
                 ReleaseStatusDto.valueOf(releaseStatus.getName()), release.getId(), release.getMission().getId(),
@@ -147,7 +142,7 @@ class ReleaseServiceTest {
 
         Mockito.when(releaseStatusDao.findByName(ReleaseStatusDto.CREATED.name())).thenReturn(Optional.of(releaseStatus));
         Mockito.when(missionDao.findById(releaseDto.getMissionId())).thenReturn(Optional.of(mission));
-        Mockito.when(releaseDao.save(ArgumentMatchers.any(Release.class))).thenReturn(savedRelease);
+        Mockito.when(releaseDao.save(mappedRelease)).thenReturn(savedRelease);
 
         Mockito.when(firmwareDao.findById(1L)).thenReturn(Optional.of(firstFirmware));
         Mockito.when(firmwareDao.findById(2L)).thenReturn(Optional.of(secondFirmware));
@@ -155,8 +150,9 @@ class ReleaseServiceTest {
         Mockito.when(hardwareDao.findById(1L)).thenReturn(Optional.of(firstHardware));
         Mockito.when(hardwareDao.findById(2L)).thenReturn(Optional.of(secondHardware));
 
-        Mockito.when(firmwareVersionDao.save(ArgumentMatchers.any(FirmwareVersion.class)))
-                .thenReturn(new FirmwareVersion());
+        Mockito.when(releaseMapper.toEntity(eq(releaseDto), eq(releaseStatus), eq(mission))).thenReturn(mappedRelease);
+        Mockito.when(releaseMapper.toDto(eq(savedRelease))).thenReturn(mappedReleaseDto);
+        Mockito.when(firmwareVersionDao.save(isNotNull())).thenReturn(new FirmwareVersion());
 
         ReleaseDto checkedReleaseDto = releaseService.createRelease(releaseDto);
         assertEquals(correctReleaseDto, checkedReleaseDto, "Incorrect releaseDto");
@@ -165,7 +161,7 @@ class ReleaseServiceTest {
         Mockito.verify(releaseMapper, Mockito.times(1)).toEntity(releaseDto, releaseStatus, mission);
     }
 
-    //@Test
+    @Test
     void createReleaseByOrigin() {
         ReleaseDto releaseDto = new ReleaseDto();
         releaseDto.setName("test");
@@ -178,28 +174,22 @@ class ReleaseServiceTest {
         ReleaseStatus releaseStatus = ReleaseStatus.builder().name(ReleaseStatusDto.CREATED.name()).build();
         Mission mission = Mission.builder().id(missionId).build();
 
-        Release savedRelease = Release
-                .builder()
-                .id(releaseId)
-                .name(releaseDto.getName())
-                .status(releaseStatus)
-                .ociName(releaseDto.getOciName())
-                .reference(releaseDto.getReference())
-                .mission(mission)
-                .releaseDate(LocalDate.now())
-                .build();
+        ReleaseDto mappedReleaseDto = new ReleaseDto(1L, releaseDto.getName(), LocalDate.now(),
+                releaseDto.getOciName(), releaseDto.getReference(), null, ReleaseStatusDto.CREATED,
+                1L, releaseDto.getMissionId(), null);
 
-        Release release = Release
-                .builder()
-                .id(releaseId)
-                .name(releaseDto.getName())
-                .status(releaseStatus)
-                .ociName(releaseDto.getOciName())
-                .reference(releaseDto.getReference())
-                .mission(mission)
-                .releaseDate(LocalDate.now())
-                .firmwareVersions(firmwareVersionList)
-                .build();
+        Release mappedRelease = Release.builder().name(releaseDto.getName()).status(releaseStatus)
+                .ociName(releaseDto.getOciName()).reference(releaseDto.getReference()).mission(mission)
+                .releaseDate(LocalDate.now()).firmwareVersions(new ArrayList<>()).build();
+
+        Release savedRelease = Release.builder().id(releaseId).name(releaseDto.getName()).status(releaseStatus)
+                .ociName(releaseDto.getOciName()).reference(releaseDto.getReference()).mission(mission)
+                .releaseDate(LocalDate.now()).build();
+
+        Release release = Release.builder().id(releaseId).name(releaseDto.getName()).status(releaseStatus)
+                .ociName(releaseDto.getOciName()).reference(releaseDto.getReference()).mission(mission)
+                .releaseDate(LocalDate.now()).firmwareVersions(firmwareVersionList).build();
+
         ReleaseDto correctReleaseDto = new ReleaseDto(release.getId(), release.getName(), release.getReleaseDate(),
                 release.getOciName(), release.getReference(), release.getDigest(),
                 ReleaseStatusDto.valueOf(releaseStatus.getName()), release.getId(), release.getMission().getId(),
@@ -207,10 +197,11 @@ class ReleaseServiceTest {
 
         Mockito.when(releaseStatusDao.findByName(ReleaseStatusDto.CREATED.name())).thenReturn(Optional.of(releaseStatus));
         Mockito.when(missionDao.findById(releaseDto.getMissionId())).thenReturn(Optional.of(mission));
-        Mockito.when(releaseDao.save(ArgumentMatchers.any(Release.class))).thenReturn(savedRelease);
+        Mockito.when(releaseDao.save(mappedRelease)).thenReturn(savedRelease);
 
-        Mockito.when(firmwareVersionDao.save(ArgumentMatchers.any(FirmwareVersion.class)))
-                .thenReturn(new FirmwareVersion());
+        Mockito.when(releaseMapper.toEntity(eq(releaseDto), eq(releaseStatus), eq(mission))).thenReturn(mappedRelease);
+        Mockito.when(releaseMapper.toDto(eq(savedRelease))).thenReturn(mappedReleaseDto);
+        Mockito.when(firmwareVersionDao.save(ArgumentMatchers.isNotNull())).thenReturn(new FirmwareVersion());
 
         Mockito.when(releaseDao.findById(releaseId-1)).thenReturn(Optional.of(release));
 
@@ -220,7 +211,7 @@ class ReleaseServiceTest {
         Mockito.verify(missionDao, Mockito.times(1)).findById(releaseDto.getMissionId());
     }
 
-    //@Test
+    @Test
     void createReleaseFailedByFirmware() {
         ReleaseDto releaseDto = new ReleaseDto();
         releaseDto.setName("test");
@@ -240,20 +231,23 @@ class ReleaseServiceTest {
         ReleaseStatus releaseStatus = ReleaseStatus.builder().name(ReleaseStatusDto.CREATED.name()).build();
         Mission mission = Mission.builder().id(missionId).build();
 
-        Release savedRelease = Release
-                .builder()
-                .id(releaseId)
-                .name(releaseDto.getName())
-                .status(releaseStatus)
-                .ociName(releaseDto.getOciName())
-                .reference(releaseDto.getReference())
-                .mission(mission)
-                .releaseDate(LocalDate.now())
-                .build();
+        ReleaseDto mappedReleaseDto = new ReleaseDto(1L, releaseDto.getName(), LocalDate.now(),
+                releaseDto.getOciName(), releaseDto.getReference(), null, ReleaseStatusDto.CREATED,
+                1L, releaseDto.getMissionId(), null);
+
+        Release mappedRelease = Release.builder().name(releaseDto.getName()).status(releaseStatus)
+                .ociName(releaseDto.getOciName()).reference(releaseDto.getReference()).mission(mission)
+                .releaseDate(LocalDate.now()).firmwareVersions(new ArrayList<>()).build();
+
+        Release savedRelease = Release.builder().id(releaseId).name(releaseDto.getName()).status(releaseStatus)
+                .ociName(releaseDto.getOciName()).reference(releaseDto.getReference()).mission(mission)
+                .releaseDate(LocalDate.now()).build();
 
         Mockito.when(releaseStatusDao.findByName(ReleaseStatusDto.CREATED.name())).thenReturn(Optional.of(releaseStatus));
         Mockito.when(missionDao.findById(releaseDto.getMissionId())).thenReturn(Optional.of(mission));
-        Mockito.when(releaseDao.save(ArgumentMatchers.any(Release.class))).thenReturn(savedRelease);
+        Mockito.when(releaseMapper.toEntity(eq(releaseDto), eq(releaseStatus), eq(mission))).thenReturn(mappedRelease);
+        Mockito.when(releaseMapper.toDto(eq(savedRelease))).thenReturn(mappedReleaseDto);
+        Mockito.when(releaseDao.save(mappedRelease)).thenReturn(savedRelease);
 
         Firmware firmware = Firmware.builder().id(4L).build();
 
@@ -267,46 +261,30 @@ class ReleaseServiceTest {
         assertTrue(thrown.getMessage().contains("is not represented for Hardware"), "Incorrect message");
         Mockito.verify(releaseStatusDao, Mockito.times(1)).findByName(ReleaseStatusDto.CREATED.name());
         Mockito.verify(missionDao, Mockito.times(1)).findById(releaseDto.getMissionId());
-        Mockito.verify(releaseDao, Mockito.times(1)).save(ArgumentMatchers.any(Release.class));
+        Mockito.verify(releaseDao, Mockito.times(1)).save(mappedRelease);
         Mockito.verify(firmwareDao, Mockito.times(1)).findById(4L);
         Mockito.verify(hardwareDao, Mockito.times(1)).findById(1L);
     }
 
-    //@Test
+    @Test
     void getAllReleases() {
         ReleaseStatus releaseStatus = ReleaseStatus.builder().name(ReleaseStatusDto.CREATED.name()).build();
         Mission mission = Mission.builder().id(missionId).build();
 
-        Release firstRelease = Release
-                .builder()
-                .id(releaseId)
-                .name("First Release")
-                .status(releaseStatus)
-                .ociName("repo")
-                .reference("reference")
-                .mission(mission)
-                .releaseDate(LocalDate.now())
-                .firmwareVersions(firmwareVersionList)
-                .build();
+        Release firstRelease = Release.builder().id(releaseId).name("First Release").status(releaseStatus)
+                .ociName("repo").reference("reference").mission(mission).releaseDate(LocalDate.now())
+                .firmwareVersions(firmwareVersionList).build();
         ReleaseDto firstReleaseDto = new ReleaseDto(firstRelease.getId(), firstRelease.getName(),
-                firstRelease.getReleaseDate(), firstRelease.getOciName(), firstRelease.getReference(), firstRelease.getDigest(),
-                ReleaseStatusDto.valueOf(releaseStatus.getName()), firstRelease.getId(), firstRelease.getMission().getId(),
-                releaseContentList);
-        Release secondRelease = Release
-                .builder()
-                .id(releaseId+1)
-                .name("First Release")
-                .status(releaseStatus)
-                .ociName("repo")
-                .reference("reference")
-                .mission(mission)
-                .releaseDate(LocalDate.now())
-                .firmwareVersions(firmwareVersionList)
-                .build();
+                firstRelease.getReleaseDate(), firstRelease.getOciName(), firstRelease.getReference(),
+                firstRelease.getDigest(), ReleaseStatusDto.valueOf(releaseStatus.getName()), firstRelease.getId(),
+                firstRelease.getMission().getId(), releaseContentList);
+        Release secondRelease = Release.builder().id(releaseId+1).name("First Release").status(releaseStatus)
+                .ociName("repo").reference("reference").mission(mission).releaseDate(LocalDate.now())
+                .firmwareVersions(firmwareVersionList).build();
         ReleaseDto secondReleaseDto = new ReleaseDto(secondRelease.getId(), secondRelease.getName(),
-                secondRelease.getReleaseDate(), secondRelease.getOciName(), secondRelease.getReference(), secondRelease.getDigest(),
-                ReleaseStatusDto.valueOf(releaseStatus.getName()), secondRelease.getId(), secondRelease.getMission().getId(),
-                releaseContentList);
+                secondRelease.getReleaseDate(), secondRelease.getOciName(), secondRelease.getReference(),
+                secondRelease.getDigest(), ReleaseStatusDto.valueOf(releaseStatus.getName()), secondRelease.getId(),
+                secondRelease.getMission().getId(), releaseContentList);
 
         Mockito.when(releaseDao.findAll(PageRequest.of(0, 1)))
                 .thenReturn(new PageImpl<>(List.of(firstRelease)));
@@ -314,6 +292,9 @@ class ReleaseServiceTest {
                 .thenReturn(new PageImpl<>(List.of(secondRelease)));
         Mockito.when(releaseDao.findAll(PageRequest.of(0, 2)))
                 .thenReturn(new PageImpl<>(List.of(firstRelease, secondRelease)));
+
+        Mockito.when(releaseMapper.toDto(eq(firstRelease))).thenReturn(firstReleaseDto);
+        Mockito.when(releaseMapper.toDto(eq(secondRelease))).thenReturn(secondReleaseDto);
 
         List<ReleaseDto> checkedFirstReleaseDtoLIst = releaseService.getAllReleases(0, 1, missionId);
         List<ReleaseDto> checkedSecondReleaseDtoLIst = releaseService.getAllReleases(1, 1, missionId);
@@ -324,7 +305,7 @@ class ReleaseServiceTest {
         assertEquals(List.of(firstReleaseDto, secondReleaseDto), checkedAllReleaseDtoLIst, "Incorrect allReleaseDtoLIst");
     }
 
-    //@Test
+    @Test
     void getAllReleasesEmptyPage(){
         int page = 1;
         int pageSize = 10;
@@ -362,28 +343,21 @@ class ReleaseServiceTest {
         Mockito.verify(releaseDao, Mockito.times(1)).findAll(PageRequest.of(0, 1));
     }
 
-    //@Test
+    @Test
     void getReleaseById() {
         ReleaseStatus releaseStatus = ReleaseStatus.builder().name(ReleaseStatusDto.CREATED.name()).build();
         Mission mission = Mission.builder().id(missionId).build();
 
-        Release release = Release
-                .builder()
-                .id(releaseId)
-                .name("Release")
-                .status(releaseStatus)
-                .ociName("repo")
-                .reference("reference")
-                .mission(mission)
-                .releaseDate(LocalDate.now())
-                .firmwareVersions(firmwareVersionList)
-                .build();
+        Release release = Release.builder().id(releaseId).name("Release").status(releaseStatus)
+                .ociName("repo").reference("reference").mission(mission).releaseDate(LocalDate.now())
+                .firmwareVersions(firmwareVersionList).build();
         ReleaseDto releaseDto = new ReleaseDto(release.getId(), release.getName(), release.getReleaseDate(),
                 release.getOciName(), release.getReference(), release.getDigest(),
-                ReleaseStatusDto.valueOf(releaseStatus.getName()), release.getId(), release.getMission().getId(),
-                releaseContentList);
+                ReleaseStatusDto.valueOf(releaseStatus.getName()), release.getId(),
+                release.getMission().getId(), releaseContentList);
 
         Mockito.when(releaseDao.findById(releaseId)).thenReturn(Optional.of(release));
+        Mockito.when(releaseMapper.toDto(eq(release))).thenReturn(releaseDto);
 
         ReleaseDto checkedReleaseDto = releaseService.getReleaseById(releaseId);
 

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
 class FirmwareServiceTest {
@@ -61,7 +62,7 @@ class FirmwareServiceTest {
                 .build();
 
         Mockito.when(firmwareTypeDao.findByName(firmwareType.getName())).thenReturn(Optional.of(firmwareType));
-        Mockito.when(firmwareDao.save(ArgumentMatchers.any(Firmware.class))).thenReturn(firmware);
+        Mockito.when(firmwareDao.save(eq(firmwareMapper.toEntity(firmwareDto, firmwareType)))).thenReturn(firmware);
 
         FirmwareDto firmwareDtoResult = firmwareService.createFirmware(firmwareDto);
 
@@ -70,9 +71,9 @@ class FirmwareServiceTest {
         assertEquals(firmwareDto.getOciName(), firmwareDtoResult.getOciName(), "Incorrect OCI name");
         assertEquals(firmwareDto.getType(), firmwareDtoResult.getType(), "Incorrect type");
         Mockito.verify(firmwareTypeDao, Mockito.times(1)).findByName(firmwareType.getName());
-        Mockito.verify(firmwareDao, Mockito.times(1)).save(ArgumentMatchers.any(Firmware.class));
-        Mockito.verify(firmwareMapper, Mockito.times(1)).toEntity(firmwareDto, firmwareType);
+        Mockito.verify(firmwareMapper, Mockito.times(2)).toEntity(firmwareDto, firmwareType);
         Mockito.verify(firmwareMapper, Mockito.times(1)).toDto(firmware);
+        Mockito.verify(firmwareDao, Mockito.times(1)).save(eq(firmwareMapper.toEntity(firmwareDto, firmwareType)));
     }
 
     @Test
@@ -183,7 +184,7 @@ class FirmwareServiceTest {
         Mockito.verify(firmwareDao, Mockito.times(1)).findAll(PageRequest.of(1, 1));
         Mockito.verify(firmwareMapper, Mockito.times(
                 allFirmwareList.size()+firstFirmwareList.size()+secondFirmwareList.size()))
-                .toDto(ArgumentMatchers.any(Firmware.class));
+                .toDto(any(Firmware.class));
     }
 
     @Test
@@ -216,7 +217,7 @@ class FirmwareServiceTest {
 
         assertEquals(firmwareTypes, allFirmwareTypes, "Incorrect firmware types");
         Mockito.verify(firmwareTypeDao, Mockito.times(1)).findAll();
-        Mockito.verify(firmwareTypeMapper, Mockito.times(2))
-                .toDto(ArgumentMatchers.any(FirmwareType.class));
+        Mockito.verify(firmwareTypeMapper, Mockito.times(firmwareTypes.size()))
+                .toDto(any(FirmwareType.class));
     }
 }

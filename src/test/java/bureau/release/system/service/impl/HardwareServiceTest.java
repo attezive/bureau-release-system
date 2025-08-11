@@ -19,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
 class HardwareServiceTest {
@@ -80,7 +81,8 @@ class HardwareServiceTest {
                 .firmwareList(firmwareSet)
                 .missions(new ArrayList<>())
                 .build();
-        Mockito.when(hardwareDao.save(ArgumentMatchers.any(Hardware.class))).thenReturn(hardware);
+        Mockito.when(hardwareDao.save(eq(hardwareMapper.toEntity(hardwareDto, firmwareSet, new ArrayList<>()))))
+                .thenReturn(hardware);
 
         HardwareDto hardwareDtoResult = hardwareService.createHardware(hardwareDto);
 
@@ -89,10 +91,11 @@ class HardwareServiceTest {
         assertEquals(hardware.getName(), hardwareDtoResult.getName(), "Incorrect hardware name");
         Mockito.verify(firmwareDao, Mockito.times(1)).findById(firstFirmwareId);
         Mockito.verify(firmwareDao, Mockito.times(1)).findById(secondFirmwareId);
-        Mockito.verify(hardwareDao, Mockito.times(1)).save(ArgumentMatchers.any(Hardware.class));
         Mockito.verify(hardwareMapper, Mockito.times(1)).toDto(hardware);
-        Mockito.verify(hardwareMapper, Mockito.times(1))
+        Mockito.verify(hardwareMapper, Mockito.times(2))
                 .toEntity(hardwareDto, firmwareSet, new ArrayList<>());
+        Mockito.verify(hardwareDao, Mockito.times(1))
+                .save(eq(hardwareMapper.toEntity(hardwareDto, firmwareSet, new ArrayList<>())));
     }
 
     @Test
@@ -156,7 +159,7 @@ class HardwareServiceTest {
 
         assertEquals(hardwareList, allHardwareList, "Incorrect hardware list");
         Mockito.verify(hardwareDao, Mockito.times(1)).findAll();
-        Mockito.verify(hardwareMapper, Mockito.times(hardwareList.size())).toDto(ArgumentMatchers.any(Hardware.class));
+        Mockito.verify(hardwareMapper, Mockito.times(hardwareList.size())).toDto(any(Hardware.class));
     }
 
     @Test
@@ -203,7 +206,7 @@ class HardwareServiceTest {
 
         assertEquals(hardwareList, allHardwareList, "Incorrect hardware list");
         Mockito.verify(missionDao, Mockito.times(1)).findById(missionId);
-        Mockito.verify(hardwareMapper, Mockito.times(hardwareList.size())).toDto(ArgumentMatchers.any(Hardware.class));
+        Mockito.verify(hardwareMapper, Mockito.times(hardwareList.size())).toDto(any(Hardware.class));
     }
 
     @Test
