@@ -1,9 +1,12 @@
 package bureau.release.system.service.impl;
 
 import bureau.release.system.config.OciRegistryProperties;
-import bureau.release.system.exception.OrasException;
+import bureau.release.system.exception.ReleaseStreamException;
 import bureau.release.system.service.ArtifactUploader;
-import lombok.RequiredArgsConstructor;
+import land.oras.ContainerRef;
+import land.oras.LocalPath;
+import land.oras.Manifest;
+import land.oras.Registry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -11,80 +14,42 @@ import java.io.*;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class OrasArtifactUploader implements ArtifactUploader {
     private final OciRegistryProperties properties;
+    private final Registry registry;
 
-    public void login() throws IOException {
-        boolean isSecure = properties.url().contains("https");
-        String command = String.format("oras login%s %s -u %s -p %s",
-                isSecure ? "" : " --plain-http",
-                properties.url().replace("http://", "").replace("https://", ""),
-                properties.ecrUsername(),
-                properties.ecrPassword());
-        log.debug("Execute command login: {}", command);
-        Process process = Runtime.getRuntime().exec(command);
-        BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-        String line;
-        while ((line = errorReader.readLine()) != null) {
-            if (line.contains("WARN")) {
-                log.warn(line);
-            } else {
-                log.error(line);
-                throw new OrasException(line);
-            }
-        }
+    public OrasArtifactUploader(OciRegistryProperties properties) {
+        this.properties = properties;
+        registry = Registry.builder()
+                .withInsecure(!properties.url().contains("https"))
+                .defaults(properties.ecrUsername(), properties.ecrPassword())
+                .build();
     }
 
     @Override
     public String uploadArtifact(ByteArrayOutputStream artifactBody, String artifactName, String ociName, String reference) {
-        artifactName = artifactName.replace(" ", "_");
-        createFile(artifactBody, artifactName);
-        log.debug("File created: {}", artifactName);
-        boolean isSecure = properties.url().contains("https");
-
-        String command = String.format("oras push%s %s/%s:%s %s",
-                isSecure ? "" : " --plain-http",
-                properties.url().replace("http://", "").replace("https://", ""),
-                ociName,
-                reference,
-                artifactName);
-
         String digest;
-        log.debug("Execute command upload: {}", command);
         try {
-            digest = executeUploadCommand(command);
-        } catch (IOException e) {
-            throw new OrasException("IO Exception: " + e.getMessage());
+            createFile(artifactBody, artifactName);
+            log.debug("File created: {}", artifactName);
+
+            LocalPath artifact = LocalPath.of(artifactName);
+
+            log.debug("Artifact push");
+            Manifest manifest = registry.pushArtifact(
+                    ContainerRef.parse(
+                            String.format("%s/%s:%s",
+                                    properties.url().replace("http://", "").replace("https://", ""),
+                                    ociName,
+                                    reference)),
+                    artifact);
+
+            digest = manifest.getDescriptor().getDigest();
         } finally {
             if (deleteFile(artifactName)) {
                 log.debug("File deleted: {}", artifactName);
             } else {
                 log.error("Delete file failed: {}", artifactName);
-            }
-        }
-        return digest;
-    }
-
-    private String executeUploadCommand(String command) throws IOException {
-        Process process = Runtime.getRuntime().exec(command);
-        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        String line;
-        String digest = null;
-        while ((line = reader.readLine()) != null) {
-            log.debug("Artifact Oras Upload : {}", line);
-            if (line.contains("Digest")) {
-                digest = line.replace("Digest: ", "");
-                log.info("Artifact Digest: {}", digest);
-            }
-        }
-        reader.close();
-        BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-        while ((line = errorReader.readLine()) != null) {
-            log.error("Artifact Oras Upload: {}", line);
-            if (line.contains("Error: basic credential not found")) {
-                login();
-                digest = executeUploadCommand(command);
             }
         }
         return digest;
@@ -96,7 +61,7 @@ public class OrasArtifactUploader implements ArtifactUploader {
         try (OutputStream out = new FileOutputStream(file)) {
             artifactBody.writeTo(out);
         } catch (IOException e) {
-            throw new OrasException("IO Exception: " + e.getMessage());
+            throw new ReleaseStreamException("IO Exception: " + e.getMessage());
         }
     }
 

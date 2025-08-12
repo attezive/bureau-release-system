@@ -247,7 +247,7 @@ class ReleasesControllerTest {
         ReleaseDto firstReleaseDto = new ReleaseDto(1L, "First Release", LocalDate.now(), "project/repo", "v1",
                 "sha256digest1", ReleaseStatusDto.COMPLETED, 1L, 1, List.of(firstReleaseContent));
 
-        Mockito.when(releaseService.uploadReleaseToHarbor(1L)).thenReturn(firstReleaseDto);
+        Mockito.when(releaseService.uploadRelease(1L)).thenReturn(firstReleaseDto);
 
         mockMvc.perform(post("/releases/1"))
                 .andExpect(status().isOk())
@@ -272,7 +272,7 @@ class ReleasesControllerTest {
                 .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[1].releaseId").value(1L))
                 .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[1].hardwareId").value(1L));
 
-        Mockito.verify(releaseService, Mockito.times(1)).uploadReleaseToHarbor(1L);
+        Mockito.verify(releaseService, Mockito.times(1)).uploadRelease(1L);
     }
 
     @Test

@@ -105,7 +105,7 @@ public class ReleasesController {
             @PathVariable @Parameter(description = "Id выгружаемого релиза", example = "1") long releaseId
     ) {
         log.info("Upload to Harbor: releaseId = {}", releaseId);
-        return releaseService.uploadReleaseToHarbor(releaseId);
+        return releaseService.uploadRelease(releaseId);
     }
 
     @GetMapping(value = "/{releaseId}/tar", produces = "application/tar")

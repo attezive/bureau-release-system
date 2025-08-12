@@ -1,6 +1,7 @@
 package bureau.release.system.service.impl;
 
 import bureau.release.system.dal.*;
+import bureau.release.system.exception.ReleaseStreamException;
 import bureau.release.system.exception.ReleaseSystemException;
 import bureau.release.system.model.*;
 import bureau.release.system.service.ArtifactDownloader;
@@ -15,6 +16,7 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
+import land.oras.exception.OrasException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -173,14 +175,14 @@ public class ReleaseService {
                 artifactDownloader.loadReleaseContent(release, outputStream);
     }
 
-    public ReleaseDto uploadReleaseToHarbor(@Positive long releaseId) {
+    public ReleaseDto uploadRelease(@Positive long releaseId) {
         Release release = releaseDao.findById(releaseId)
                 .orElseThrow(() -> new EntityNotFoundException("Release not found"));
         log.debug("Upload Harbor: Release {}", release);
 
         ByteArrayOutputStream outputStream;
         try {
-            outputStream = downloadRelease(release);
+            outputStream = downloadReleaseContent(release);
         } catch (ReleaseSystemException e) {
             setReleaseStatus(release, ReleaseStatusDto.BUILD_DOWNLOADING_ERROR);
             throw e;
@@ -188,8 +190,8 @@ public class ReleaseService {
 
         String digest;
         try {
-            digest = uploadRelease(release, outputStream);
-        } catch (ReleaseSystemException e) {
+            digest = uploadReleaseTar(release, outputStream);
+        } catch (SecurityException | ReleaseStreamException | OrasException e) {
             setReleaseStatus(release, ReleaseStatusDto.BUILD_UPLOADING_ERROR);
             throw e;
         }
@@ -200,7 +202,7 @@ public class ReleaseService {
         return releaseMapper.toDto(release);
     }
 
-    private ByteArrayOutputStream downloadRelease(Release release) {
+    private ByteArrayOutputStream downloadReleaseContent(Release release) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         setReleaseStatus(release, ReleaseStatusDto.DOWNLOADING);
         log.debug("Download data for release id {}", release.getId());
@@ -208,7 +210,7 @@ public class ReleaseService {
         return outputStream;
     }
 
-    private String uploadRelease(Release release, ByteArrayOutputStream outputStream) {
+    private String uploadReleaseTar(Release release, ByteArrayOutputStream outputStream) {
         setReleaseStatus(release, ReleaseStatusDto.UPLOADING);
         log.debug("Upload data release id {}", release.getId());
         return artifactUploader.uploadArtifact(outputStream,
