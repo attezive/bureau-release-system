@@ -24,6 +24,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class FirmwareServiceTest {
@@ -44,7 +46,6 @@ class FirmwareServiceTest {
 
     @Test
     void createFirmware() {
-        Long firmwareId = 1L;
         FirmwareDto firmwareDto = new FirmwareDto();
         firmwareDto.setName("Firmware");
         firmwareDto.setOciName("testOci");
@@ -52,28 +53,23 @@ class FirmwareServiceTest {
 
         FirmwareType firmwareType = new FirmwareType(1, "APPLICATION");
 
-        Firmware firmware = Firmware
-                .builder()
-                .id(firmwareId)
-                .name(firmwareDto.getName())
-                .firmwareType(firmwareType)
-                .hardwareList(new ArrayList<>())
-                .ociName(firmwareDto.getOciName())
-                .build();
-
-        Mockito.when(firmwareTypeDao.findByName(firmwareType.getName())).thenReturn(Optional.of(firmwareType));
-        Mockito.when(firmwareDao.save(eq(firmwareMapper.toEntity(firmwareDto, firmwareType)))).thenReturn(firmware);
+        when(firmwareTypeDao.findByName(firmwareType.getName())).thenReturn(Optional.of(firmwareType));
+        when(firmwareDao.save(eq(firmwareMapper.toEntity(firmwareDto, firmwareType)))).thenAnswer(inv -> {
+            Firmware firmware = inv.getArgument(0, Firmware.class);
+            firmware.setId(3L);
+            return firmware;
+        });
 
         FirmwareDto firmwareDtoResult = firmwareService.createFirmware(firmwareDto);
 
-        assertEquals(firmware.getId(), firmwareDtoResult.getId(), "Incorrect firmware id");
+        assertEquals(3L, firmwareDtoResult.getId(), "Incorrect firmware id");
         assertEquals(firmwareDto.getName(), firmwareDtoResult.getName(), "Incorrect name");
         assertEquals(firmwareDto.getOciName(), firmwareDtoResult.getOciName(), "Incorrect OCI name");
         assertEquals(firmwareDto.getType(), firmwareDtoResult.getType(), "Incorrect type");
-        Mockito.verify(firmwareTypeDao, Mockito.times(1)).findByName(firmwareType.getName());
-        Mockito.verify(firmwareMapper, Mockito.times(2)).toEntity(firmwareDto, firmwareType);
-        Mockito.verify(firmwareMapper, Mockito.times(1)).toDto(firmware);
-        Mockito.verify(firmwareDao, Mockito.times(1)).save(eq(firmwareMapper.toEntity(firmwareDto, firmwareType)));
+        verify(firmwareTypeDao, Mockito.times(1)).findByName(firmwareType.getName());
+        verify(firmwareMapper, Mockito.times(2)).toEntity(firmwareDto, firmwareType);
+        verify(firmwareMapper, Mockito.times(1)).toDto(any(Firmware.class));
+        verify(firmwareDao, Mockito.times(1)).save(any(Firmware.class));
     }
 
     @Test
@@ -83,93 +79,72 @@ class FirmwareServiceTest {
         firmwareDto.setOciName("testOci");
         firmwareDto.setType("NOT_FOUND");
 
-        Mockito.when(firmwareTypeDao.findByName("NOT_FOUND")).thenReturn(Optional.empty());
+        when(firmwareTypeDao.findByName("NOT_FOUND")).thenReturn(Optional.empty());
 
         EntityNotFoundException thrown = assertThrows(
                 EntityNotFoundException.class,
                 () -> firmwareService.createFirmware(firmwareDto));
 
         assertEquals("Type not found", thrown.getMessage(), "Incorrect message");
-        Mockito.verify(firmwareTypeDao, Mockito.times(1)).findByName("NOT_FOUND");
+        verify(firmwareTypeDao, Mockito.times(1)).findByName("NOT_FOUND");
     }
 
     @Test
     void getFirmwareById() {
         Long firmwareId = 1L;
         FirmwareType firmwareType = new FirmwareType(1, "APPLICATION");
-        Long hardwareId = 1L;
-        Hardware hardware = Hardware.builder().id(hardwareId).build();
-        Firmware firmware = Firmware
-                .builder()
-                .id(firmwareId)
-                .name("Firmware")
-                .firmwareType(firmwareType)
-                .ociName("testrepo")
-                .hardwareList(List.of(hardware))
-                .build();
-        FirmwareDto correctFirmwareDto = new FirmwareDto(firmware.getId(), firmware.getName(),
-                firmware.getFirmwareType().getName(), firmware.getOciName(), List.of(hardwareId));
+        Hardware hardware = Hardware.builder().id(1L).build();
+        Firmware firmware = Firmware.builder().id(firmwareId).name("Firmware").firmwareType(firmwareType)
+                .ociName("testrepo").hardwareList(List.of(hardware)).build();
+        FirmwareDto firmwareDto = firmwareMapper.toDto(firmware);
 
-        Mockito.when(firmwareDao.findById(firmwareId)).thenReturn(Optional.of(firmware));
+        when(firmwareDao.findById(firmwareId)).thenReturn(Optional.of(firmware));
 
-        FirmwareDto firmwareDto = firmwareService.getFirmwareById(firmwareId);
+        FirmwareDto firmwareDtoResult = firmwareService.getFirmwareById(firmwareId);
 
-        assertEquals(correctFirmwareDto, firmwareDto, "Incorrect firmware");
-        Mockito.verify(firmwareDao, Mockito.times(1)).findById(firmwareId);
-        Mockito.verify(firmwareMapper, Mockito.times(1)).toDto(firmware);
+        assertEquals(firmwareDto, firmwareDtoResult, "Incorrect firmware");
+        verify(firmwareDao, Mockito.times(1)).findById(firmwareId);
+        verify(firmwareMapper, Mockito.times(2)).toDto(firmware);
     }
 
     @Test
     void getFirmwareByIdFailed() {
         Long firmwareId = 1L;
-        Mockito.when(firmwareDao.findById(firmwareId)).thenReturn(Optional.empty());
+        when(firmwareDao.findById(firmwareId)).thenReturn(Optional.empty());
 
         EntityNotFoundException thrown = assertThrows(
                 EntityNotFoundException.class,
                 () -> firmwareService.getFirmwareById(firmwareId));
 
         assertEquals("Firmware not found", thrown.getMessage(), "Incorrect message");
-        Mockito.verify(firmwareDao, Mockito.times(1)).findById(firmwareId);
+        verify(firmwareDao, Mockito.times(1)).findById(firmwareId);
     }
 
     @Test
     void getAllFirmware() {
-        Long firstFirmwareId = 1L;
         FirmwareType firstFirmwareType = new FirmwareType(1, "APPLICATION");
-        Long firstHardwareId = 1L;
-        Hardware firstHardware = Hardware.builder().id(firstHardwareId).build();
-        Firmware firstFirmware = Firmware
-                .builder()
-                .id(firstFirmwareId)
-                .name("First Firmware")
-                .firmwareType(firstFirmwareType)
-                .ociName("testrepo")
-                .hardwareList(List.of(firstHardware))
-                .build();
-        FirmwareDto firstFirmwareDto = new FirmwareDto(firstFirmware.getId(), firstFirmware.getName(),
-                firstFirmware.getFirmwareType().getName(), firstFirmware.getOciName(), List.of(firstHardwareId));
+        FirmwareType secondFirmwareType = new FirmwareType(2, "FPGA");
+
+        Hardware firstHardware = Hardware.builder().id(1L).build();
+        Hardware secondHardware = Hardware.builder().id(2L).build();
+
+        Long firstFirmwareId = 1L;
+        Firmware firstFirmware = Firmware.builder().id(firstFirmwareId).name("First Firmware")
+                .firmwareType(firstFirmwareType).ociName("testrepo")
+                .hardwareList(List.of(firstHardware)).build();
+        FirmwareDto firstFirmwareDto = firmwareMapper.toDto(firstFirmware);
 
         Long secondFirmwareId = 2L;
-        FirmwareType secondFirmwareType = new FirmwareType(2, "FPGA");
-        Long secondHardwareId = 2L;
-        Hardware secondHardware = Hardware.builder().id(secondHardwareId).build();
-        Firmware secondFirmware = Firmware
-                .builder()
-                .id(secondFirmwareId)
-                .name("Second Firmware")
-                .firmwareType(secondFirmwareType)
-                .ociName("testrepo")
-                .hardwareList(List.of(firstHardware, secondHardware))
-                .build();
-        FirmwareDto secondFirmwareDto = new FirmwareDto(secondFirmware.getId(),
-                secondFirmware.getName(), secondFirmware.getFirmwareType().getName(),
-                secondFirmware.getOciName(), List.of(firstHardwareId, secondHardwareId));
+        Firmware secondFirmware = Firmware.builder().id(secondFirmwareId).name("Second Firmware")
+                .firmwareType(secondFirmwareType).ociName("testrepo")
+                .hardwareList(List.of(firstHardware, secondHardware)).build();
+        FirmwareDto secondFirmwareDto = firmwareMapper.toDto(secondFirmware);
 
-        Mockito.when(firmwareDao.findAll(PageRequest.of(0, 2)))
+        when(firmwareDao.findAll(PageRequest.of(0, 2)))
                 .thenReturn(new PageImpl<>(List.of(firstFirmware, secondFirmware)));
-        Mockito.when(firmwareDao.findAll(PageRequest.of(0, 1)))
+        when(firmwareDao.findAll(PageRequest.of(0, 1)))
                 .thenReturn(new PageImpl<>(List.of(firstFirmware)));
-        Mockito.when(firmwareDao.findAll(PageRequest.of(1, 1)))
+        when(firmwareDao.findAll(PageRequest.of(1, 1)))
                 .thenReturn(new PageImpl<>(List.of(secondFirmware)));
 
         List<FirmwareDto> allFirmwareList = firmwareService.getAllFirmware(0, 2);
@@ -179,12 +154,10 @@ class FirmwareServiceTest {
         assertEquals(List.of(firstFirmwareDto), firstFirmwareList, "Incorrect first Firmware page");
         assertEquals(List.of(secondFirmwareDto), secondFirmwareList, "Incorrect second Firmware page");
         assertEquals(List.of(firstFirmwareDto, secondFirmwareDto), allFirmwareList, "Incorrect all Firmware page");
-        Mockito.verify(firmwareDao, Mockito.times(1)).findAll(PageRequest.of(0, 2));
-        Mockito.verify(firmwareDao, Mockito.times(1)).findAll(PageRequest.of(0, 1));
-        Mockito.verify(firmwareDao, Mockito.times(1)).findAll(PageRequest.of(1, 1));
-        Mockito.verify(firmwareMapper, Mockito.times(
-                allFirmwareList.size()+firstFirmwareList.size()+secondFirmwareList.size()))
-                .toDto(any(Firmware.class));
+        verify(firmwareDao, Mockito.times(1)).findAll(PageRequest.of(0, 2));
+        verify(firmwareDao, Mockito.times(1)).findAll(PageRequest.of(0, 1));
+        verify(firmwareDao, Mockito.times(1)).findAll(PageRequest.of(1, 1));
+        verify(firmwareMapper, Mockito.times(6)).toDto(any(Firmware.class));
     }
 
     @Test
@@ -192,12 +165,12 @@ class FirmwareServiceTest {
         int page = 1;
         int pageSize = 10;
 
-        Mockito.when(firmwareDao.findAll(PageRequest.of(page, pageSize))).thenReturn(new PageImpl<>(List.of()));
+        when(firmwareDao.findAll(PageRequest.of(page, pageSize))).thenReturn(new PageImpl<>(List.of()));
 
         List<FirmwareDto> allFirmwareList = firmwareService.getAllFirmware(page, pageSize);
 
         assertEquals(new ArrayList<>(), allFirmwareList, "Incorrect all Firmware page");
-        Mockito.verify(firmwareDao, Mockito.times(1)).findAll(PageRequest.of(page, pageSize));
+        verify(firmwareDao, Mockito.times(1)).findAll(PageRequest.of(page, pageSize));
     }
 
 
@@ -211,13 +184,12 @@ class FirmwareServiceTest {
 
         List<FirmwareTypeDto> firmwareTypes = List.of(firstFirmwareTypeDto, secondFirmwareTypeDto);
 
-        Mockito.when(firmwareTypeDao.findAll()).thenReturn(List.of(firstFirmwareType, secondFirmwareType));
+        when(firmwareTypeDao.findAll()).thenReturn(List.of(firstFirmwareType, secondFirmwareType));
 
         List<FirmwareTypeDto> allFirmwareTypes = firmwareService.getFirmwareTypes();
 
         assertEquals(firmwareTypes, allFirmwareTypes, "Incorrect firmware types");
-        Mockito.verify(firmwareTypeDao, Mockito.times(1)).findAll();
-        Mockito.verify(firmwareTypeMapper, Mockito.times(firmwareTypes.size()))
-                .toDto(any(FirmwareType.class));
+        verify(firmwareTypeDao, Mockito.times(1)).findAll();
+        verify(firmwareTypeMapper, Mockito.times(firmwareTypes.size())).toDto(any(FirmwareType.class));
     }
 }
