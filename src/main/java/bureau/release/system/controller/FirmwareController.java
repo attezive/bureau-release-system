@@ -1,6 +1,5 @@
 package bureau.release.system.controller;
 
-import bureau.release.system.service.ArtifactDownloader;
 import bureau.release.system.service.dto.FirmwareDto;
 import bureau.release.system.service.dto.FirmwareTypeDto;
 import bureau.release.system.service.dto.client.Manifest;
@@ -26,7 +25,6 @@ import java.util.List;
 @Tag(name = "Контроллер прошивок", description = "Управление прошивками")
 public class FirmwareController {
     private final FirmwareService firmwareService;
-    private final ArtifactDownloader artifactDownloader;
 
     @GetMapping
     @Operation(
@@ -98,8 +96,7 @@ public class FirmwareController {
             @PathVariable @Parameter(description = "Id запрашиваемой прошивки", example = "1") long firmwareId
     ) {
         log.info("GetFirmwareVersions: id={}", firmwareId);
-        FirmwareDto firmware = firmwareService.getFirmwareById(firmwareId);
-        return artifactDownloader.getArtifacts(firmware.getOciName());
+        return firmwareService.getFirmwareVersions(firmwareId);
     }
 
     @GetMapping("/types")

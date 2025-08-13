@@ -2,10 +2,14 @@ package bureau.release.system.service.impl;
 
 import bureau.release.system.dal.FirmwareDao;
 import bureau.release.system.dal.FirmwareTypeDao;
+import bureau.release.system.exception.ClientException;
+import bureau.release.system.exception.ReleaseSystemException;
 import bureau.release.system.model.Firmware;
 import bureau.release.system.model.FirmwareType;
+import bureau.release.system.service.ArtifactDownloader;
 import bureau.release.system.service.dto.FirmwareDto;
 import bureau.release.system.service.dto.FirmwareTypeDto;
+import bureau.release.system.service.dto.client.Manifest;
 import bureau.release.system.service.mapping.FirmwareMapper;
 import bureau.release.system.service.mapping.FirmwareTypeMapper;
 import jakarta.persistence.EntityNotFoundException;
@@ -31,6 +35,7 @@ public class FirmwareService {
     private final FirmwareTypeDao firmwareTypeDao;
     private final FirmwareMapper firmwareMapper;
     private final FirmwareTypeMapper firmwareTypeMapper;
+    private final ArtifactDownloader artifactDownloader;
 
     @Transactional
     public FirmwareDto createFirmware(@Valid FirmwareDto firmwareDto) {
@@ -58,5 +63,20 @@ public class FirmwareService {
     @Transactional(readOnly = true)
     public List<FirmwareTypeDto> getFirmwareTypes() {
         return firmwareTypeDao.findAll().stream().map(firmwareTypeMapper::toDto).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Manifest> getFirmwareVersions(@Positive long firmwareId) {
+        log.info("GetFirmwareVersions: id={}", firmwareId);
+        FirmwareDto firmware = getFirmwareById(firmwareId);
+        List<Manifest> manifests;
+        try {
+            manifests = artifactDownloader.getArtifacts(firmware.getOciName());
+        } catch (ReleaseSystemException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ClientException(e.getMessage());
+        }
+        return manifests;
     }
 }

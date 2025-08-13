@@ -127,7 +127,7 @@ class FirmwareControllerTest {
                 "sha256digest2", 8, secondLayerAnnotation);
         Manifest manifest = new Manifest("Talk", "v1", List.of(firstManifestLayer, secondManifestLayer));
 
-        Mockito.when(artifactDownloader.getArtifacts(firmwareDto.getOciName())).thenReturn(List.of(manifest));
+        Mockito.when(firmwareService.getFirmwareVersions(firmwareDto.getId())).thenReturn(List.of(manifest));
 
         mockMvc.perform(get("/firmware/1/versions"))
                 .andExpect(status().isOk())
@@ -139,8 +139,7 @@ class FirmwareControllerTest {
                 .andExpect(jsonPath("$[0].layers.[1].annotations.title").value("bye world.bin"))
                 .andExpect(jsonPath("$[1].name").doesNotExist());
 
-        Mockito.verify(firmwareService, Mockito.times(1)).getFirmwareById(1);
-        Mockito.verify(artifactDownloader, Mockito.times(1)).getArtifacts(firmwareDto.getOciName());
+        Mockito.verify(firmwareService, Mockito.times(1)).getFirmwareVersions(firmwareDto.getId());
     }
 
     @Test

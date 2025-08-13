@@ -39,7 +39,6 @@ public class OciArtifactDownloader implements ArtifactDownloader {
         return manifest;
     }
 
-    //TODO Add duplicate files loading per one time
     @Override
     public void loadReleaseContent(Release release, OutputStream outputStream) {
         log.debug("Loading Release Content: releaseId={}", release.getId());

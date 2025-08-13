@@ -1,6 +1,7 @@
 package bureau.release.system.service.impl;
 
 import bureau.release.system.dal.*;
+import bureau.release.system.exception.ClientException;
 import bureau.release.system.exception.ReleaseStreamException;
 import bureau.release.system.exception.ReleaseSystemException;
 import bureau.release.system.model.*;
@@ -143,13 +144,10 @@ public class ReleaseService {
     @Transactional(readOnly = true)
     public List<ReleaseDto> getAllReleases(int page, int size, @Min(1) Integer missionId) {
         Pageable pageable = PageRequest.of(page, size);
-        List<ReleaseDto> releases = new ArrayList<>();
-        releaseDao.findAll(pageable).forEach(release -> {
-            if (missionId == null || release.getMission().getId().equals(missionId)) {
-                releases.add(releaseMapper.toDto(release));
-            }
-        });
-        return releases;
+        if (missionId != null) {
+            return releaseDao.findByMission(missionId, pageable).map(releaseMapper::toDto).toList();
+        }
+        return releaseDao.findAll(pageable).map(releaseMapper::toDto).toList();
     }
 
     @Transactional(readOnly = true)
@@ -186,6 +184,9 @@ public class ReleaseService {
         } catch (ReleaseSystemException e) {
             setReleaseStatus(release, ReleaseStatusDto.BUILD_DOWNLOADING_ERROR);
             throw e;
+        } catch (Exception e) {
+            setReleaseStatus(release, ReleaseStatusDto.BUILD_DOWNLOADING_ERROR);
+            throw new ClientException(e.getMessage());
         }
 
         String digest;

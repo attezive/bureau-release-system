@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -53,7 +52,6 @@ public class ReleaseDto {
     private int missionId;
 
     @Schema(description = "Список содержимого релиза")
-    @NotEmpty
     @Valid
     private List<ReleaseContentDto> releaseContent;
 }

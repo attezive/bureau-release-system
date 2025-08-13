@@ -286,9 +286,9 @@ class ReleaseServiceTest {
                 secondRelease.getDigest(), ReleaseStatusDto.valueOf(releaseStatus.getName()), secondRelease.getId(),
                 secondRelease.getMission().getId(), releaseContentList);
 
-        Mockito.when(releaseDao.findAll(PageRequest.of(0, 1)))
+        Mockito.when(releaseDao.findByMission(missionId, PageRequest.of(0, 1)))
                 .thenReturn(new PageImpl<>(List.of(firstRelease)));
-        Mockito.when(releaseDao.findAll(PageRequest.of(1, 1)))
+        Mockito.when(releaseDao.findByMission(missionId, PageRequest.of(1, 1)))
                 .thenReturn(new PageImpl<>(List.of(secondRelease)));
         Mockito.when(releaseDao.findAll(PageRequest.of(0, 2)))
                 .thenReturn(new PageImpl<>(List.of(firstRelease, secondRelease)));
@@ -298,7 +298,7 @@ class ReleaseServiceTest {
 
         List<ReleaseDto> checkedFirstReleaseDtoLIst = releaseService.getAllReleases(0, 1, missionId);
         List<ReleaseDto> checkedSecondReleaseDtoLIst = releaseService.getAllReleases(1, 1, missionId);
-        List<ReleaseDto> checkedAllReleaseDtoLIst = releaseService.getAllReleases(0, 2, missionId);
+        List<ReleaseDto> checkedAllReleaseDtoLIst = releaseService.getAllReleases(0, 2, null);
 
         assertEquals(List.of(firstReleaseDto), checkedFirstReleaseDtoLIst, "Incorrect firstReleaseDtoLIst");
         assertEquals(List.of(secondReleaseDto), checkedSecondReleaseDtoLIst, "Incorrect secondReleaseDtoLIst");
@@ -312,35 +312,10 @@ class ReleaseServiceTest {
 
         Mockito.when(releaseDao.findAll(PageRequest.of(page, pageSize))).thenReturn(new PageImpl<>(List.of()));
 
-        List<ReleaseDto> allReleaseList = releaseService.getAllReleases(page, pageSize, 0);
+        List<ReleaseDto> allReleaseList = releaseService.getAllReleases(page, pageSize, null);
 
         assertEquals(new ArrayList<>(), allReleaseList, "Incorrect Release page");
         Mockito.verify(releaseDao, Mockito.times(1)).findAll(PageRequest.of(page, pageSize));
-    }
-
-    @Test
-    void getAllReleasesEmptyMission(){
-        ReleaseStatus releaseStatus = ReleaseStatus.builder().name(ReleaseStatusDto.CREATED.name()).build();
-        Mission mission = Mission.builder().id(missionId).build();
-
-        Release firstRelease = Release
-                .builder()
-                .id(releaseId)
-                .name("First Release")
-                .status(releaseStatus)
-                .ociName("repo")
-                .reference("reference")
-                .mission(mission)
-                .releaseDate(LocalDate.now())
-                .firmwareVersions(firmwareVersionList)
-                .build();
-
-        Mockito.when(releaseDao.findAll(PageRequest.of(0, 1)))
-                .thenReturn(new PageImpl<>(List.of(firstRelease)));
-
-        List<ReleaseDto> allReleaseList = releaseService.getAllReleases(0, 1, missionId+1);
-        assertEquals(new ArrayList<>(), allReleaseList, "Incorrect Release Mission filter");
-        Mockito.verify(releaseDao, Mockito.times(1)).findAll(PageRequest.of(0, 1));
     }
 
     @Test
