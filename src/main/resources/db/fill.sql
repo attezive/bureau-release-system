@@ -1,0 +1,19 @@
+BEGIN;
+
+INSERT INTO release_statuses (name)
+VALUES
+    ('CREATED'),
+    ('DOWNLOADING'),
+    ('UPLOADING'),
+    ('COMPLETED'),
+    ('BUILD_DOWNLOADING_ERROR'),
+    ('BUILD_UPLOADING_ERROR')
+ON CONFLICT (name) DO NOTHING;
+
+INSERT INTO firmware_types (name)
+VALUES
+    ('FPGA'),
+    ('APPLICATION')
+ON CONFLICT (name) DO NOTHING;
+
+COMMIT;

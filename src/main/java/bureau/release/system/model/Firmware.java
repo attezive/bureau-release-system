@@ -3,13 +3,12 @@ package bureau.release.system.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
+@Data
 @Table(name = "firmware")
-@Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -26,8 +25,8 @@ public class Firmware {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "type", nullable = false)
-    private FirmwareType type;
+    private FirmwareType firmwareType;
 
-    @ManyToMany(mappedBy = "firmwareSet")
-    private Set<Hardware> hardwareSet =  new HashSet<>();
+    @ManyToMany(mappedBy = "firmwareList")
+    private List<Hardware> hardwareList =  new ArrayList<>();
 }

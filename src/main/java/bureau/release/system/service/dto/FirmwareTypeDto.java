@@ -1,26 +1,18 @@
 package bureau.release.system.service.dto;
 
-import bureau.release.system.model.FirmwareType;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
+@Schema(description = "Сущность типа прошивки")
 public class FirmwareTypeDto {
+    @Schema(description = "Уникальный идентификатор типа прошивки", example = "1", accessMode = Schema.AccessMode.READ_ONLY)
     private int id;
+
+    @Schema(description = "Наименование типа прошивки", example = "FPGA")
     private String name;
-
-    public FirmwareTypeDto(FirmwareType firmwareType) {
-        this.id = firmwareType.getId();
-        this.name = firmwareType.getName();
-    }
-
-    public FirmwareTypeDto(FirmwareType firmwareType, List<Long> firmwareIds) {
-        this.id = firmwareType.getId();
-        this.name = firmwareType.getName();
-    }
 }

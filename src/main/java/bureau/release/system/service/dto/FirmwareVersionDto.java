@@ -1,6 +1,8 @@
 package bureau.release.system.service.dto;
 
-import bureau.release.system.model.FirmwareVersion;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,16 +10,22 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
+@Schema(description = "Сущность использованной версии прошивки в релизе")
 public class FirmwareVersionDto {
-    private long id;
+    @Schema(description = "Уникальный идентификатор версии прошивки", example = "1", accessMode = Schema.AccessMode.READ_ONLY)
+    private Long id;
+
+    @Schema(description = "Наименование версии", example = "v1")
+    @NotBlank
     private String firmwareVersion;
+
+    @Schema(description = "Идентификатор прошивки", example = "1")
+    @Positive
     private Long firmwareId;
+
+    @Schema(description = "Идентификатор релиза", example = "1", accessMode = Schema.AccessMode.READ_ONLY)
     private Long releaseId;
 
-    public FirmwareVersionDto(FirmwareVersion firmwareVersion) {
-        this.id = firmwareVersion.getId();
-        this.firmwareVersion = firmwareVersion.getFirmwareVersion();
-        this.firmwareId = firmwareVersion.getFirmware().getId();
-        this.releaseId = firmwareVersion.getRelease().getId();
-    }
+    @Schema(description = "Идентификатор девайса", example = "1", accessMode = Schema.AccessMode.READ_ONLY)
+    private Long hardwareId;
 }

@@ -9,8 +9,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "releases")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -30,6 +29,9 @@ public class Release {
 
     @Column(length = 100)
     private String reference;
+
+    @Column(length = 100)
+    private String digest;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "status", nullable = false)

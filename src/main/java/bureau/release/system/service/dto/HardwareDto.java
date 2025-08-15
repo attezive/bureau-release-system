@@ -1,42 +1,30 @@
 package bureau.release.system.service.dto;
 
-import bureau.release.system.model.Hardware;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Set;
+import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
+@Schema(description = "Сущность девайса")
 public class HardwareDto {
+    @Schema(description = "Уникальный идентификатор девайса", example = "1", accessMode = Schema.AccessMode.READ_ONLY)
     private long id;
+
+    @Schema(description = "Наименование девайса", example = "astra")
+    @NotBlank
     private String name;
-    private Set<Integer> missionsIds;
-    private Set<Long> firmwareIds;
 
-    public HardwareDto(Hardware hardware) {
-        this.id = hardware.getId();
-        this.name = hardware.getName();
-    }
+    @Schema(description = "Список id миссий, использующих девайс", example = "[1, 2]", accessMode = Schema.AccessMode.READ_ONLY)
+    private List<Integer> missionsIds;
 
-    public HardwareDto(Hardware hardware, Set<Integer> missionIds) {
-        this.id = hardware.getId();
-        this.name = hardware.getName();
-        this.missionsIds = missionIds;
-    }
-
-    public HardwareDto(long id, String name, Set<Long> firmwareIds) {
-        this.id = id;
-        this.name = name;
-        this.firmwareIds = firmwareIds;
-    }
-
-    public HardwareDto(Hardware hardware, Set<Integer> missionIds, Set<Long> firmwareIds) {
-        this.id = hardware.getId();
-        this.name = hardware.getName();
-        this.missionsIds = missionIds;
-        this.firmwareIds = firmwareIds;
-    }
+    @Schema(description = "Список id прошивок, используемых девайсом", example = "[1, 2]")
+    @NotEmpty
+    private List<Long> firmwareIds;
 }

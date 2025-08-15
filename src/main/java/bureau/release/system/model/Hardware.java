@@ -3,13 +3,12 @@ package bureau.release.system.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "hardware")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -21,8 +20,8 @@ public class Hardware {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @ManyToMany(mappedBy = "hardwareSet")
-    private Set<Mission> missions = new HashSet<>();
+    @ManyToMany(mappedBy = "hardwareList")
+    private List<Mission> missions = new ArrayList<>();
 
     @ManyToMany
     @JoinTable(
@@ -30,5 +29,5 @@ public class Hardware {
             joinColumns = @JoinColumn(name = "hardware_id"),
             inverseJoinColumns = @JoinColumn(name = "firmware_id")
     )
-    private Set<Firmware> firmwareSet = new HashSet<>();
+    private List<Firmware> firmwareList = new ArrayList<>();
 }

@@ -1,7 +1,19 @@
+spring:
+  application:
+    name: bureau-release-system
+  security:
+    user:
+      name: user
+      password: password
+      roles: USER
+  datasource:
+    url: jdbc:postgresql://localhost:5432/release-system
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
 oci:
   registry:
     url: http://localhost:88
-    name: /library/testrepo
     ecr-username: admin
     ecr-password: Harbor12345
     accept-manifest-types:
@@ -12,6 +24,7 @@ feign:
     enabled: true
     maxConnections: 200
     maxConnectionsPerRoute: 50
+    connectionTimeToLive: 10
   client:
     config:
       oci-registry-client:

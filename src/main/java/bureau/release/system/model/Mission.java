@@ -3,13 +3,12 @@ package bureau.release.system.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "missions")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -27,5 +26,5 @@ public class Mission {
             joinColumns = @JoinColumn(name = "mission_id"),
             inverseJoinColumns = @JoinColumn(name = "hardware_id")
     )
-    private Set<Hardware> hardwareSet = new HashSet<>();
+    private List<Hardware> hardwareList = new ArrayList<>();
 }

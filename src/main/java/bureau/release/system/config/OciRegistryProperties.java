@@ -11,6 +11,9 @@ public record OciRegistryProperties(
         String name,
         String ecrUsername,
         String ecrPassword,
+        Integer maxConnections,
+        Integer maxConnectionsPerRoute,
+        Integer connectionTimeout,
 
         @DefaultValue({
                 "application/vnd.oci.image.index.v1+json",

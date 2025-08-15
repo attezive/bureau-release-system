@@ -5,8 +5,7 @@ import lombok.*;
 
 @Entity
 @Table(name = "firmware_to_release")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -19,6 +18,10 @@ public class FirmwareVersion {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "firmware_id", nullable = false)
     private Firmware firmware;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hardware_id", nullable = false)
+    private Hardware hardware;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "release_id", nullable = false)
