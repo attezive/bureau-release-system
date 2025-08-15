@@ -51,7 +51,7 @@ public class FirmwareController {
     @PostMapping
     @Operation(
             summary = "Создание новой прошивки",
-            description = "Позволяет создать новую прошивку, исходя из переданных данных",
+            description = "Позволяет создать новую прошивку, исходя из переданных данных. (Admin rules only)",
             responses = {
                     @ApiResponse(responseCode = "201", description = "Успешное создание",
                             headers = @Header(name = HttpHeaders.LOCATION, description = "Местоположение прошивки")),

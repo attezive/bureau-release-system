@@ -11,9 +11,9 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST}/${DB_NAME}
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-      SPRING_SECURITY_USER_NAME: ${SPRING_NAME}
-      SPRING_SECURITY_USER_PASSWORD: ${SPRING_PASSWORD}
-      SPRING_SECURITY_USER_ROLES: ${SPRING_ROLES}
+      RELEASE_SYSTEM_ADMIN_USERNAME: ${ADMIN_NAME}
+      RELEASE_SYSTEM_ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      RELEASE_SYSTEM_ADMIN_AUTHORITY: ${ADMIN_AUTHORITY}
       OCI_REGISTRY_URL: ${OCI_URL}
       OCI_REGISTRY_ECR-USERNAME: ${OCI_USERNAME}
       OCI_REGISTRY_ECR-PASSWORD: ${OCI_PASSWORD}
@@ -32,8 +32,9 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - ./src/main/resources/db/setup.sql:/docker-entrypoint-initdb.d/1.sql
-      - ./src/main/resources/db/fill.sql:/docker-entrypoint-initdb.d/2.sql
+      - ./src/main/resources/db/init.sql:/docker-entrypoint-initdb.d/1.sql
+      - ./src/main/resources/db/setup.sql:/docker-entrypoint-initdb.d/2.sql
+      - ./src/main/resources/db/fill.sql:/docker-entrypoint-initdb.d/3.sql
       - db-data:/var/lib/postgresql/data
     ports:
       - "5433:5432"

@@ -83,7 +83,7 @@ public class MissionsController {
     @Operation(
             summary = "Удаление миссии по id",
             description = "Позволяет удалить данные о миссии, исходя из переданного id. Исходя из особеннойстей " +
-                    "устройства базы данных, ошибка не будет возвращена даже при неправильном id"
+                    "устройства базы данных, ошибка не будет возвращена даже при неправильном id. (Admin rules only)"
     )
     public ResponseEntity<ErrorDto> deleteMission(
             @PathVariable @Parameter(description = "Id удаляемой миссии", example = "1") int missionId
