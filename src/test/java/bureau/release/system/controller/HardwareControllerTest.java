@@ -3,27 +3,32 @@ package bureau.release.system.controller;
 import bureau.release.system.service.dto.HardwareDto;
 import bureau.release.system.service.impl.HardwareService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithAnonymousUser;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 import java.util.List;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(HardwareController.class)
-@AutoConfigureMockMvc(addFilters = false)
 class HardwareControllerTest {
 
-    @Autowired
     private MockMvc mockMvc;
 
     @Autowired
@@ -32,8 +37,18 @@ class HardwareControllerTest {
     @MockitoBean
     private HardwareService hardwareService;
 
+    @BeforeEach
+    void setUp(WebApplicationContext webApplicationContext){
+        mockMvc = MockMvcBuilders
+                .webAppContextSetup(webApplicationContext)
+                .apply(springSecurity())
+                .alwaysDo(print())
+                .build();
+    }
+
     @Test
-    void getHardware() throws Exception {
+    @WithMockUser(authorities = "admin")
+    void getHardware_whenAdminAuthority_thenReturnHardware() throws Exception {
         HardwareDto firstHardwareDto = new HardwareDto(1L, "First Hardware", List.of(1, 2), List.of(3L, 4L));
         HardwareDto secondHardwareDto = new HardwareDto(2L, "Second Hardware", List.of(2, 3), List.of(1L));
         HardwareDto thirdHardwareDto = new HardwareDto(3L, "Third Hardware", List.of(3), List.of(2L));
@@ -64,8 +79,8 @@ class HardwareControllerTest {
     }
 
     @Test
-    void getHardwareByMission() throws Exception {
-        HardwareDto firstHardwareDto = new HardwareDto(1L, "First Hardware", List.of(1, 2), List.of(3L, 4L));
+    @WithMockUser(authorities = "admin")
+    void getHardwareByMission_whenAdminAuthority_thenReturnHardware() throws Exception {
         HardwareDto secondHardwareDto = new HardwareDto(2L, "Second Hardware", List.of(2, 3), List.of(1L));
         HardwareDto thirdHardwareDto = new HardwareDto(3L, "Third Hardware", List.of(3), List.of(2L));
 
@@ -91,7 +106,8 @@ class HardwareControllerTest {
     }
 
     @Test
-    void getHardwareById() throws Exception {
+    @WithMockUser(authorities = "admin")
+    void getHardwareById_whenAdminAuthority_thenReturnHardware() throws Exception {
         HardwareDto hardwareDto = new HardwareDto(1L, "Hardware", List.of(1, 2), List.of(3L, 4L));
         Mockito.when(hardwareService.getHardwareById(1L)).thenReturn(hardwareDto);
 
@@ -108,7 +124,8 @@ class HardwareControllerTest {
     }
 
     @Test
-    void createHardware() throws Exception {
+    @WithMockUser(authorities = "admin")
+    void createHardware_whenAdminAuthority_thenCreateAndReturnHardware() throws Exception {
         HardwareDto requestHardwareDto = new HardwareDto();
         requestHardwareDto.setName("Hardware");
         requestHardwareDto.setFirmwareIds(List.of(3L, 4L));
@@ -119,7 +136,8 @@ class HardwareControllerTest {
 
         mockMvc.perform(post("/hardware")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestHardwareDto)))
+                        .content(objectMapper.writeValueAsString(requestHardwareDto))
+                        .with(csrf()))
                 .andExpect(status().isCreated())
                 .andExpect(header().string(HttpHeaders.LOCATION, "/hardware/1"))
                 .andExpect(jsonPath("$.id").value(1))
@@ -130,5 +148,66 @@ class HardwareControllerTest {
                 .andExpect(jsonPath("$.firmwareIds.[1]").value(4L));
 
         Mockito.verify(hardwareService, Mockito.times(1)).createHardware(requestHardwareDto);
+    }
+
+    @Test
+    @WithMockUser(authorities = "user")
+    void createHardware_whenUserAuthority_thenCreateAndReturnHardware() throws Exception {
+        HardwareDto requestHardwareDto = new HardwareDto();
+        requestHardwareDto.setName("Hardware");
+        requestHardwareDto.setFirmwareIds(List.of(3L, 4L));
+
+        HardwareDto responseHardwareDto = new HardwareDto(1L, "Hardware", List.of(1, 2), List.of(3L, 4L));
+
+        Mockito.when(hardwareService.createHardware(requestHardwareDto)).thenReturn(responseHardwareDto);
+
+        mockMvc.perform(post("/hardware")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestHardwareDto))
+                        .with(csrf()))
+                .andExpect(status().isCreated())
+                .andExpect(header().string(HttpHeaders.LOCATION, "/hardware/1"))
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("Hardware"))
+                .andExpect(jsonPath("$.missionsIds.[0]").value(1))
+                .andExpect(jsonPath("$.missionsIds.[1]").value(2))
+                .andExpect(jsonPath("$.firmwareIds.[0]").value(3L))
+                .andExpect(jsonPath("$.firmwareIds.[1]").value(4L));
+
+        Mockito.verify(hardwareService, Mockito.times(1)).createHardware(requestHardwareDto);
+    }
+
+    @Test
+    @WithAnonymousUser
+    void getAnyMethod_whenAnonymous_thenUnauthorized() throws Exception {
+
+        mockMvc.perform(get("/hardware"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/hardware")
+                        .param("missionId", "3"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/hardware/1"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/hardware")
+                        .with(csrf()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(authorities = "user")
+    void getAnyMethod_whenUser_thenIs2xxSuccessful() throws Exception {
+
+        mockMvc.perform(get("/hardware"))
+                .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(get("/hardware")
+                        .param("missionId", "3"))
+                .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(get("/hardware/1"))
+                .andExpect(status().is2xxSuccessful());
     }
 }

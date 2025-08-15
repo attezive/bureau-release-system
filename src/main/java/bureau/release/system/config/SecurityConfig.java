@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -23,6 +24,7 @@ import javax.sql.DataSource;
 @EnableWebSecurity
 @RequiredArgsConstructor
 @EnableConfigurationProperties(ReleaseSystemProperties.class)
+@EnableMethodSecurity
 public class SecurityConfig {
     private final ReleaseSystemProperties properties;
 
@@ -62,7 +64,6 @@ public class SecurityConfig {
                                 "/swagger-resources/**"
                         ).permitAll()
                         .requestMatchers(HttpMethod.DELETE).hasAuthority(properties.authority())
-                        .requestMatchers(HttpMethod.POST, "/firmware/**").hasAuthority(properties.authority())
                         .requestMatchers( "/users/**").hasAuthority(properties.authority())
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults())

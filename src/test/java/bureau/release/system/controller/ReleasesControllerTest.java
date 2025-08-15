@@ -6,28 +6,32 @@ import bureau.release.system.service.dto.ReleaseDto;
 import bureau.release.system.service.dto.ReleaseStatusDto;
 import bureau.release.system.service.impl.ReleaseService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithAnonymousUser;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 import java.time.LocalDate;
 import java.util.List;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ReleasesController.class)
-@AutoConfigureMockMvc(addFilters = false)
 class ReleasesControllerTest {
 
-    @Autowired
     private MockMvc mockMvc;
 
     @Autowired
@@ -36,8 +40,18 @@ class ReleasesControllerTest {
     @MockitoBean
     private ReleaseService releaseService;
 
+    @BeforeEach
+    void setUp(WebApplicationContext webApplicationContext){
+        mockMvc = MockMvcBuilders
+                .webAppContextSetup(webApplicationContext)
+                .apply(springSecurity())
+                .alwaysDo(print())
+                .build();
+    }
+
     @Test
-    void getReleases() throws Exception {
+    @WithMockUser(authorities = "admin")
+    void getReleases_whenAdminAuthority_thenReturnReleases() throws Exception {
         FirmwareVersionDto firstVersion = new FirmwareVersionDto(1L, "v1", 1L, 1L, 1L);
         FirmwareVersionDto secondVersion = new FirmwareVersionDto(2L, "v1", 2L, 1L, 1L);
         ReleaseContentDto firstReleaseContent = new ReleaseContentDto(1L, List.of(firstVersion, secondVersion));
@@ -98,17 +112,13 @@ class ReleasesControllerTest {
     }
 
     @Test
-    void getReleasesDefault() throws Exception {
+    @WithMockUser(authorities = "admin")
+    void getReleasesDefault_whenAdminAuthority_thenReturnReleases() throws Exception {
         FirmwareVersionDto firstVersion = new FirmwareVersionDto(1L, "v1", 1L, 1L, 1L);
         FirmwareVersionDto secondVersion = new FirmwareVersionDto(2L, "v1", 2L, 1L, 1L);
         ReleaseContentDto firstReleaseContent = new ReleaseContentDto(1L, List.of(firstVersion, secondVersion));
         ReleaseDto firstReleaseDto = new ReleaseDto(1L, "First Release", LocalDate.now(), "project/repo", "v1",
                 "sha256digest1", ReleaseStatusDto.COMPLETED, 1L, 1, List.of(firstReleaseContent));
-
-        FirmwareVersionDto thirdVersion = new FirmwareVersionDto(3L, "v2", 1L, 2L, 1L);
-        ReleaseContentDto secondReleaseContent = new ReleaseContentDto(1L, List.of(thirdVersion));
-        ReleaseDto secondReleaseDto = new ReleaseDto(2L, "Second Release", LocalDate.now(), "project/repo", "v2",
-                null, ReleaseStatusDto.CREATED, 2L, 2, List.of(secondReleaseContent));
 
         List<ReleaseDto> releaseDtoList = List.of(firstReleaseDto);
 
@@ -142,13 +152,8 @@ class ReleasesControllerTest {
     }
 
     @Test
-    void getReleasesByMission() throws Exception {
-        FirmwareVersionDto firstVersion = new FirmwareVersionDto(1L, "v1", 1L, 1L, 1L);
-        FirmwareVersionDto secondVersion = new FirmwareVersionDto(2L, "v1", 2L, 1L, 1L);
-        ReleaseContentDto firstReleaseContent = new ReleaseContentDto(1L, List.of(firstVersion, secondVersion));
-        ReleaseDto firstReleaseDto = new ReleaseDto(1L, "First Release", LocalDate.now(), "project/repo", "v1",
-                "sha256digest1", ReleaseStatusDto.COMPLETED, 1L, 1, List.of(firstReleaseContent));
-
+    @WithMockUser(authorities = "admin")
+    void getReleasesByMission_whenAdminAuthority_thenReturnReleases() throws Exception {
         FirmwareVersionDto thirdVersion = new FirmwareVersionDto(3L, "v2", 1L, 2L, 1L);
         ReleaseContentDto secondReleaseContent = new ReleaseContentDto(1L, List.of(thirdVersion));
         ReleaseDto secondReleaseDto = new ReleaseDto(2L, "Second Release", LocalDate.now(), "project/repo", "v2",
@@ -185,7 +190,8 @@ class ReleasesControllerTest {
     }
 
     @Test
-    void getReleaseById() throws Exception {
+    @WithMockUser(authorities = "admin")
+    void getReleaseById_whenAdminAuthority_thenReturnRelease() throws Exception {
         FirmwareVersionDto firstVersion = new FirmwareVersionDto(1L, "v1", 1L, 1L, 1L);
         FirmwareVersionDto secondVersion = new FirmwareVersionDto(2L, "v1", 2L, 1L, 1L);
         ReleaseContentDto firstReleaseContent = new ReleaseContentDto(1L, List.of(firstVersion, secondVersion));
@@ -221,7 +227,8 @@ class ReleasesControllerTest {
     }
 
     @Test
-    void getReleaseStatuses() throws Exception {
+    @WithMockUser(authorities = "admin")
+    void getReleaseStatuses_whenAdminAuthority_thenReturnStatuses() throws Exception {
         List<ReleaseStatusDto> releaseStatusList = List.of(ReleaseStatusDto.values());
 
         Mockito.when(releaseService.getReleaseStatuses()).thenReturn(releaseStatusList);
@@ -240,7 +247,8 @@ class ReleasesControllerTest {
     }
 
     @Test
-    void uploadHarbor() throws Exception {
+    @WithMockUser(authorities = "admin")
+    void uploadHarbor_whenAdminAuthority_thenBuildUploadAndReturnRelease() throws Exception {
         FirmwareVersionDto firstVersion = new FirmwareVersionDto(1L, "v1", 1L, 1L, 1L);
         FirmwareVersionDto secondVersion = new FirmwareVersionDto(2L, "v1", 2L, 1L, 1L);
         ReleaseContentDto firstReleaseContent = new ReleaseContentDto(1L, List.of(firstVersion, secondVersion));
@@ -249,7 +257,7 @@ class ReleasesControllerTest {
 
         Mockito.when(releaseService.uploadRelease(1L)).thenReturn(firstReleaseDto);
 
-        mockMvc.perform(post("/releases/1"))
+        mockMvc.perform(post("/releases/1").with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.name").value("First Release"))
@@ -276,7 +284,45 @@ class ReleasesControllerTest {
     }
 
     @Test
-    void createRelease() throws Exception {
+    @WithMockUser(authorities = "user")
+    void uploadHarbor_whenUserAuthority_thenBuildUploadAndReturnRelease() throws Exception {
+        FirmwareVersionDto firstVersion = new FirmwareVersionDto(1L, "v1", 1L, 1L, 1L);
+        FirmwareVersionDto secondVersion = new FirmwareVersionDto(2L, "v1", 2L, 1L, 1L);
+        ReleaseContentDto firstReleaseContent = new ReleaseContentDto(1L, List.of(firstVersion, secondVersion));
+        ReleaseDto firstReleaseDto = new ReleaseDto(1L, "First Release", LocalDate.now(), "project/repo", "v1",
+                "sha256digest1", ReleaseStatusDto.COMPLETED, 1L, 1, List.of(firstReleaseContent));
+
+        Mockito.when(releaseService.uploadRelease(1L)).thenReturn(firstReleaseDto);
+
+        mockMvc.perform(post("/releases/1").with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1L))
+                .andExpect(jsonPath("$.name").value("First Release"))
+                .andExpect(jsonPath("$.releaseDate").value(LocalDate.now().toString()))
+                .andExpect(jsonPath("$.ociName").value("project/repo"))
+                .andExpect(jsonPath("$.reference").value("v1"))
+                .andExpect(jsonPath("$.digest").value("sha256digest1"))
+                .andExpect(jsonPath("$.status").value(ReleaseStatusDto.COMPLETED.name()))
+                .andExpect(jsonPath("$.originId").value(1L))
+                .andExpect(jsonPath("$.missionId").value(1))
+                .andExpect(jsonPath("$.releaseContent.[0].hardwareId").value(1L))
+                .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[0].id").value(1L))
+                .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[0].firmwareVersion").value("v1"))
+                .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[0].firmwareId").value(1L))
+                .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[0].releaseId").value(1L))
+                .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[0].hardwareId").value(1L))
+                .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[1].id").value(2L))
+                .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[1].firmwareVersion").value("v1"))
+                .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[1].firmwareId").value(2L))
+                .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[1].releaseId").value(1L))
+                .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[1].hardwareId").value(1L));
+
+        Mockito.verify(releaseService, Mockito.times(1)).uploadRelease(1L);
+    }
+
+    @Test
+    @WithMockUser(authorities = "admin")
+    void createRelease_whenAdminAuthority_thenCreateAndReturnRelease() throws Exception {
         FirmwareVersionDto requestFirstVersion = new FirmwareVersionDto();
         requestFirstVersion.setFirmwareId(1L);
         requestFirstVersion.setFirmwareVersion("v1");
@@ -302,7 +348,8 @@ class ReleasesControllerTest {
 
         mockMvc.perform(post("/releases")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestReleaseDto)))
+                        .content(objectMapper.writeValueAsString(requestReleaseDto))
+                        .with(csrf()))
                 .andExpect(status().isCreated())
                 .andExpect(header().string(HttpHeaders.LOCATION, "/releases/1"))
                 .andExpect(jsonPath("$.id").value(1L))
@@ -327,5 +374,119 @@ class ReleasesControllerTest {
                 .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[1].hardwareId").value(1L));
 
         Mockito.verify(releaseService, Mockito.times(1)).createRelease(requestReleaseDto);
+    }
+
+    @Test
+    @WithMockUser(authorities = "user")
+    void createRelease_whenUserAuthority_thenCreateAndReturnRelease() throws Exception {
+        FirmwareVersionDto requestFirstVersion = new FirmwareVersionDto();
+        requestFirstVersion.setFirmwareId(1L);
+        requestFirstVersion.setFirmwareVersion("v1");
+        FirmwareVersionDto requestSecondVersion = new FirmwareVersionDto();
+        requestSecondVersion.setFirmwareId(1L);
+        requestSecondVersion.setFirmwareVersion("v1");
+        ReleaseContentDto requestReleaseContent = new ReleaseContentDto(1L,
+                List.of(requestFirstVersion, requestSecondVersion));
+        ReleaseDto requestReleaseDto = new ReleaseDto();
+        requestReleaseDto.setName("First Release");
+        requestReleaseDto.setReleaseDate(LocalDate.now());
+        requestReleaseDto.setOciName("project/repo");
+        requestReleaseDto.setReference("v1");
+        requestReleaseDto.setReleaseContent(List.of(requestReleaseContent));
+
+        FirmwareVersionDto firstVersion = new FirmwareVersionDto(1L, "v1", 1L, 1L, 1L);
+        FirmwareVersionDto secondVersion = new FirmwareVersionDto(2L, "v1", 2L, 1L, 1L);
+        ReleaseContentDto firstReleaseContent = new ReleaseContentDto(1L, List.of(firstVersion, secondVersion));
+        ReleaseDto responseReleaseDto = new ReleaseDto(1L, "First Release", LocalDate.now(), "project/repo", "v1",
+                null, ReleaseStatusDto.CREATED, 1L, 1, List.of(firstReleaseContent));
+
+        Mockito.when(releaseService.createRelease(requestReleaseDto)).thenReturn(responseReleaseDto);
+
+        mockMvc.perform(post("/releases")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestReleaseDto))
+                        .with(csrf()))
+                .andExpect(status().isCreated())
+                .andExpect(header().string(HttpHeaders.LOCATION, "/releases/1"))
+                .andExpect(jsonPath("$.id").value(1L))
+                .andExpect(jsonPath("$.name").value("First Release"))
+                .andExpect(jsonPath("$.releaseDate").value(LocalDate.now().toString()))
+                .andExpect(jsonPath("$.ociName").value("project/repo"))
+                .andExpect(jsonPath("$.reference").value("v1"))
+                .andExpect(jsonPath("$.digest").doesNotExist())
+                .andExpect(jsonPath("$.status").value(ReleaseStatusDto.CREATED.name()))
+                .andExpect(jsonPath("$.originId").value(1L))
+                .andExpect(jsonPath("$.missionId").value(1))
+                .andExpect(jsonPath("$.releaseContent.[0].hardwareId").value(1L))
+                .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[0].id").value(1L))
+                .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[0].firmwareVersion").value("v1"))
+                .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[0].firmwareId").value(1L))
+                .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[0].releaseId").value(1L))
+                .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[0].hardwareId").value(1L))
+                .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[1].id").value(2L))
+                .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[1].firmwareVersion").value("v1"))
+                .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[1].firmwareId").value(2L))
+                .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[1].releaseId").value(1L))
+                .andExpect(jsonPath("$.releaseContent.[0].firmwareVersions.[1].hardwareId").value(1L));
+
+        Mockito.verify(releaseService, Mockito.times(1)).createRelease(requestReleaseDto);
+    }
+
+    @Test
+    @WithAnonymousUser
+    void getAnyMethod_whenAnonymous_thenUnauthorized() throws Exception {
+
+        mockMvc.perform(get("/releases")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/releases"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/releases")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .param("missionId", "2"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/releases/1"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/releases/statuses"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/releases/1")
+                        .with(csrf()))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/releases")
+                        .with(csrf()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(authorities = "user")
+    void getAnyMethod_whenUser_thenIs2xxSuccessful() throws Exception {
+
+        mockMvc.perform(get("/releases")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(get("/releases"))
+                .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(get("/releases")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .param("missionId", "2"))
+                .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(get("/releases/1"))
+                .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(get("/releases/statuses"))
+                .andExpect(status().is2xxSuccessful());
     }
 }

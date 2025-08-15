@@ -8,27 +8,32 @@ import bureau.release.system.service.dto.client.Manifest;
 import bureau.release.system.service.dto.client.ManifestLayer;
 import bureau.release.system.service.impl.FirmwareService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithAnonymousUser;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @WebMvcTest(FirmwareController.class)
-@AutoConfigureMockMvc(addFilters = false)
 class FirmwareControllerTest {
 
-    @Autowired
     private MockMvc mockMvc;
 
     @Autowired
@@ -40,8 +45,18 @@ class FirmwareControllerTest {
     @MockitoBean
     private ArtifactDownloader artifactDownloader;
 
+    @BeforeEach
+    void setUp(WebApplicationContext webApplicationContext) {
+        mockMvc = MockMvcBuilders
+                .webAppContextSetup(webApplicationContext)
+                .apply(springSecurity())
+                .alwaysDo(print())
+                .build();
+    }
+
     @Test
-    void getFirmware() throws Exception {
+    @WithMockUser(authorities = "admin")
+    void getFirmware_whenAdminAuthority_thenReturnFirmware() throws Exception {
         FirmwareDto firstFirmwareDto = new FirmwareDto(1, "First Firmware", "APPLICATION",
                 "project/repo", List.of(1L, 2L, 3L));
         FirmwareDto secondFirmwareDto = new FirmwareDto(2, "Second Firmware", "FPGA",
@@ -72,11 +87,10 @@ class FirmwareControllerTest {
     }
 
     @Test
-    void getFirmwareByDefault() throws Exception {
+    @WithMockUser(authorities = "admin")
+    void getFirmwareByDefault_whenAdminAuthority_thenReturnFirmware() throws Exception {
         FirmwareDto firstFirmwareDto = new FirmwareDto(1, "First Firmware", "APPLICATION",
                 "project/repo", List.of(1L, 2L, 3L));
-        FirmwareDto secondFirmwareDto = new FirmwareDto(2, "Second Firmware", "FPGA",
-                "project/repo", List.of(2L, 3L));
         List<FirmwareDto> firmwareList = List.of(firstFirmwareDto);
 
         Mockito.when(firmwareService.getAllFirmware(0, 1)).thenReturn(firmwareList);
@@ -96,7 +110,8 @@ class FirmwareControllerTest {
     }
 
     @Test
-    void getFirmwareById() throws Exception {
+    @WithMockUser(authorities = "admin")
+    void getFirmwareById_whenAdminAuthority_thenReturnFirmware() throws Exception {
         FirmwareDto firmwareDto = new FirmwareDto(1, "Firmware", "APPLICATION",
                 "project/repo", List.of(1L, 2L, 3L));
         Mockito.when(firmwareService.getFirmwareById(1)).thenReturn(firmwareDto);
@@ -115,7 +130,8 @@ class FirmwareControllerTest {
     }
 
     @Test
-    void getFirmwareVersions() throws Exception {
+    @WithMockUser(authorities = "admin")
+    void getFirmwareVersions_whenAdminAuthority_thenReturnVersions() throws Exception {
         FirmwareDto firmwareDto = new FirmwareDto(1, "Talk", "APPLICATION",
                 "project/talk", List.of(1L, 2L, 3L));
         Mockito.when(firmwareService.getFirmwareById(1)).thenReturn(firmwareDto);
@@ -144,7 +160,8 @@ class FirmwareControllerTest {
     }
 
     @Test
-    void createFirmware() throws Exception {
+    @WithMockUser(authorities = "admin")
+    void createFirmware_whenAdminAuthority_thenCreateAndReturnFirmware() throws Exception {
         FirmwareDto requestFirmware = new FirmwareDto();
         requestFirmware.setName("Firmware");
         requestFirmware.setType("APPLICATION");
@@ -156,6 +173,7 @@ class FirmwareControllerTest {
         Mockito.when(firmwareService.createFirmware(requestFirmware)).thenReturn(responseFirmware);
 
         mockMvc.perform(post("/firmware")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestFirmware)))
                 .andExpect(status().isCreated())
@@ -170,7 +188,29 @@ class FirmwareControllerTest {
     }
 
     @Test
-    void getFirmwareTypes() throws Exception {
+    @WithMockUser(authorities = "user")
+    void createFirmware_whenUserAuthority_thenNotAuthenticated() throws Exception {
+        FirmwareDto requestFirmware = new FirmwareDto();
+        requestFirmware.setName("Firmware");
+        requestFirmware.setType("APPLICATION");
+        requestFirmware.setOciName("project/repo");
+
+        FirmwareDto responseFirmware = new FirmwareDto(1, "Firmware", "APPLICATION",
+                "project/repo", new ArrayList<>());
+
+        Mockito.when(firmwareService.createFirmware(requestFirmware)).thenReturn(responseFirmware);
+
+        mockMvc.perform(post("/firmware")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestFirmware)))
+                .andExpect(status().isForbidden());
+
+        Mockito.verify(firmwareService, Mockito.times(0)).createFirmware(requestFirmware);
+    }
+
+    @Test
+    @WithMockUser(authorities = "admin")
+    void getFirmwareTypes_whenAdminAuthority_thenReturnTypes() throws Exception {
         FirmwareTypeDto firstFirmwareType = new FirmwareTypeDto(1, "APPLICATION");
         FirmwareTypeDto secondFirmwareType = new FirmwareTypeDto(2, "FPGA");
         List<FirmwareTypeDto> firstFirmwareTypes = List.of(firstFirmwareType, secondFirmwareType);
@@ -185,5 +225,47 @@ class FirmwareControllerTest {
                 .andExpect(jsonPath("$[1].name").value("FPGA"));
 
         Mockito.verify(firmwareService, Mockito.times(1)).getFirmwareTypes();
+    }
+
+    @Test
+    @WithAnonymousUser
+    void getAnyMethod_whenAnonymous_thenUnauthorized() throws Exception {
+
+        mockMvc.perform(get("/firmware")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/firmware"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/firmware/1"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/firmware/1/versions"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/firmware")
+                        .with(csrf()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(authorities = "user")
+    void getAnyMethod_whenUser_thenIs2xxSuccessful() throws Exception {
+
+        mockMvc.perform(get("/firmware")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(get("/firmware"))
+                .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(get("/firmware/1"))
+                .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(get("/firmware/1/versions"))
+                .andExpect(status().is2xxSuccessful());
     }
 }
