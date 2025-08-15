@@ -36,13 +36,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(OrasException.class)
     public ResponseEntity<ErrorDto> handleOrasException(OrasException exception) {
         log.error("OrasException: {} from {}", exception.getMessage(), exception.getStackTrace()[0]);
-        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(new ErrorDto(exception.getMessage()));
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorDto(exception.getMessage()));
     }
 
     @ExceptionHandler(ClientException.class)
     public ResponseEntity<ErrorDto> handleClientException(ClientException exception) {
         log.error("ClientException: {} from {}", exception.getMessage(), exception.getStackTrace()[0]);
-        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(new ErrorDto(exception.getMessage()));
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorDto(exception.getMessage()));
     }
 
     @ExceptionHandler(ClientNotFoundException.class)
@@ -79,6 +79,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IOException.class)
     public ResponseEntity<ErrorDto> handleIOException(IOException exception) {
         log.error("IOException: {} from {}", exception.getMessage(), exception.getStackTrace()[0]);
-        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(new ErrorDto(exception.getMessage()));
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorDto(exception.getMessage()));
     }
 }

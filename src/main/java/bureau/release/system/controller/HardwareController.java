@@ -6,12 +6,16 @@ import bureau.release.system.service.dto.error.ValidationErrorResponse;
 import bureau.release.system.service.impl.HardwareService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -34,14 +38,14 @@ public class HardwareController {
                             content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class)))
             }
     )
-    public List<HardwareDto> getHardware(
+    public ResponseEntity<List<HardwareDto>> getHardware(
             @RequestParam(required = false) @Parameter(description = "Id миссии для фильтра девайсов") Integer missionId
     ) {
         log.info("GetHardware: missionId={}", missionId);
         if (missionId == null) {
-            return hardwareService.getAllHardware();
+            return ResponseEntity.ok(hardwareService.getAllHardware());
         }
-        return hardwareService.getHardwareByMissionId(missionId);
+        return ResponseEntity.ok(hardwareService.getHardwareByMissionId(missionId));
     }
 
     @PostMapping
@@ -49,16 +53,21 @@ public class HardwareController {
             summary = "Создание нового девайса",
             description = "Позволяет создать новый девайс, исходя из переданных данных",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "Успешное создание"),
+                    @ApiResponse(responseCode = "201", description = "Успешное создание",
+                            headers = @Header(name = HttpHeaders.LOCATION, description = "Местоположение девайса")),
                     @ApiResponse(responseCode = "400", description = "Неправильне тело девайса",
                             content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class))),
                     @ApiResponse(responseCode = "404", description = "Не найдены указанные данные",
                             content = @Content(schema = @Schema(implementation = ErrorDto.class)))
             }
     )
-    public HardwareDto createHardware(@RequestBody HardwareDto hardwareData) {
+    public ResponseEntity<HardwareDto> createHardware(@RequestBody HardwareDto hardwareData) {
         log.info("CreateHardware: hardwareData={}", hardwareData);
-        return hardwareService.createHardware(hardwareData);
+        HardwareDto createdHardware = hardwareService.createHardware(hardwareData);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .header(HttpHeaders.LOCATION, "/hardware/" + createdHardware.getId())
+                .body(createdHardware);
     }
 
     @GetMapping("/{hardwareId}")
@@ -73,10 +82,10 @@ public class HardwareController {
                             content = @Content(schema = @Schema(implementation = ErrorDto.class)))
             }
     )
-    public HardwareDto getHardwareById(
+    public ResponseEntity<HardwareDto> getHardwareById(
             @PathVariable @Parameter(description = "Id запрашиваемого девайса", example = "1") long hardwareId
     ) {
         log.info("GetHardwareById: id={}", hardwareId);
-        return hardwareService.getHardwareById(hardwareId);
+        return ResponseEntity.ok(hardwareService.getHardwareById(hardwareId));
     }
 }

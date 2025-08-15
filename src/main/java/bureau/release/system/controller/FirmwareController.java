@@ -8,12 +8,16 @@ import bureau.release.system.service.dto.error.ValidationErrorResponse;
 import bureau.release.system.service.impl.FirmwareService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -36,12 +40,12 @@ public class FirmwareController {
                             content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class)))
             }
     )
-    public List<FirmwareDto> getFirmware(
+    public ResponseEntity<List<FirmwareDto>> getFirmware(
             @RequestParam(required = false, defaultValue = "0") @Parameter(description = "Номер страницы") int page,
             @RequestParam(required = false, defaultValue = "1") @Parameter(description = "Размер страницы") int size
     ) {
         log.info("GetFirmware: page={}, size={}", page, size);
-        return firmwareService.getAllFirmware(page, size);
+        return ResponseEntity.ok(firmwareService.getAllFirmware(page, size));
     }
 
     @PostMapping
@@ -49,16 +53,21 @@ public class FirmwareController {
             summary = "Создание новой прошивки",
             description = "Позволяет создать новую прошивку, исходя из переданных данных",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "Успешное создание"),
+                    @ApiResponse(responseCode = "201", description = "Успешное создание",
+                            headers = @Header(name = HttpHeaders.LOCATION, description = "Местоположение прошивки")),
                     @ApiResponse(responseCode = "400", description = "Неправильне тело прошивки",
                             content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class))),
                     @ApiResponse(responseCode = "404", description = "Не найдены указанные данные",
                             content = @Content(schema = @Schema(implementation = ErrorDto.class)))
             }
     )
-    public FirmwareDto createFirmware(@RequestBody FirmwareDto firmwareData) {
+    public ResponseEntity<FirmwareDto> createFirmware(@RequestBody FirmwareDto firmwareData) {
         log.info("CreateFirmware: {}", firmwareData);
-        return firmwareService.createFirmware(firmwareData);
+        FirmwareDto createdFirmware = firmwareService.createFirmware(firmwareData);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .header(HttpHeaders.LOCATION, "/firmware/" + createdFirmware.getId())
+                .body(createdFirmware);
     }
 
     @GetMapping("/{firmwareId}")
@@ -73,11 +82,11 @@ public class FirmwareController {
                             content = @Content(schema = @Schema(implementation = ErrorDto.class)))
             }
     )
-    public FirmwareDto getFirmwareById(
+    public ResponseEntity<FirmwareDto> getFirmwareById(
             @PathVariable @Parameter(description = "Id запрашиваемой прошивки", example = "1") long firmwareId
     ) {
         log.info("GetFirmwareById: id={}", firmwareId);
-        return firmwareService.getFirmwareById(firmwareId);
+        return ResponseEntity.ok(firmwareService.getFirmwareById(firmwareId));
     }
 
     @GetMapping("/{firmwareId}/versions")
@@ -92,11 +101,11 @@ public class FirmwareController {
                             content = @Content(schema = @Schema(implementation = ErrorDto.class)))
             }
     )
-    public List<Manifest> getFirmwareVersions(
+    public ResponseEntity<List<Manifest>> getFirmwareVersions(
             @PathVariable @Parameter(description = "Id запрашиваемой прошивки", example = "1") long firmwareId
     ) {
         log.info("GetFirmwareVersions: id={}", firmwareId);
-        return firmwareService.getFirmwareVersions(firmwareId);
+        return ResponseEntity.ok(firmwareService.getFirmwareVersions(firmwareId));
     }
 
     @GetMapping("/types")
@@ -104,8 +113,8 @@ public class FirmwareController {
             summary = "Получение списка типов прошивок",
             description = "Позволяет получить список типов прошивок"
     )
-    public List<FirmwareTypeDto> getFirmwareTypes() {
+    public ResponseEntity<List<FirmwareTypeDto>> getFirmwareTypes() {
         log.info("GetFirmwareTypes");
-        return firmwareService.getFirmwareTypes();
+        return ResponseEntity.ok(firmwareService.getFirmwareTypes());
     }
 }
