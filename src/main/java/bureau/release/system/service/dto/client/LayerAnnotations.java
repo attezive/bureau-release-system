@@ -9,8 +9,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-@Schema(description = "Сущность аннотации")
-public class LayerAnnotation {
+@Schema(description = "Сущность аннотаций слоя")
+public class LayerAnnotations {
     @Schema(description = "Наименование файла", example = "astra.bin")
     @JsonAlias("org.opencontainers.image.title")
     String title;

@@ -9,6 +9,7 @@ import bureau.release.system.model.FirmwareType;
 import bureau.release.system.service.ArtifactDownloader;
 import bureau.release.system.service.dto.FirmwareDto;
 import bureau.release.system.service.dto.FirmwareTypeDto;
+import bureau.release.system.service.dto.client.ArtifactWebhook;
 import bureau.release.system.service.dto.client.Manifest;
 import bureau.release.system.service.mapping.FirmwareMapper;
 import bureau.release.system.service.mapping.FirmwareTypeMapper;
@@ -38,7 +39,7 @@ public class FirmwareService {
     private final FirmwareTypeMapper firmwareTypeMapper;
     private final ArtifactDownloader artifactDownloader;
 
-    @PreAuthorize("hasAuthority('admin')")
+    @PreAuthorize("hasAnyAuthority('admin', 'harbor')")
     @Transactional
     public FirmwareDto createFirmware(@Valid FirmwareDto firmwareDto) {
         FirmwareType firmwareType = firmwareTypeDao.findByName(firmwareDto.getType())
@@ -71,9 +72,30 @@ public class FirmwareService {
     public List<Manifest> getFirmwareVersions(@Positive long firmwareId) {
         log.info("GetFirmwareVersions: id={}", firmwareId);
         FirmwareDto firmware = getFirmwareById(firmwareId);
+        return getManifests(firmware.getOciName());
+    }
+
+    @PreAuthorize("hasAuthority('harbor')")
+    public FirmwareDto hookFirmware(ArtifactWebhook artifactWebhook) {
+        String tag = artifactWebhook.getEventData().getResources().getFirst().getTag();
+        if (tag == null) return null;
+
+        String ociName = artifactWebhook.getEventData().getRepository().getRepoFullName();
+
+        Manifest manifest = artifactDownloader.getManifest(ociName, tag);
+
+        FirmwareDto firmwareDto = new FirmwareDto();
+        firmwareDto.setName(artifactWebhook.getEventData().getRepository().getName());
+        firmwareDto.setOciName(ociName);
+        firmwareDto.setType(manifest.getAnnotations().getType());
+
+        return firmwareDto;
+    }
+
+    public List<Manifest> getManifests(String ociName) {
         List<Manifest> manifests;
         try {
-            manifests = artifactDownloader.getArtifacts(firmware.getOciName());
+            manifests = artifactDownloader.getArtifacts(ociName);
         } catch (ReleaseSystemException e) {
             throw e;
         } catch (Exception e) {

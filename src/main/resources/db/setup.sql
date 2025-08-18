@@ -1,7 +1,7 @@
 CREATE TABLE "missions"
 (
     "id"   serial PRIMARY KEY,
-    "name" varchar(100) NOT NULL
+    "name" varchar(100) UNIQUE NOT NULL
 );
 
 
@@ -9,7 +9,7 @@ CREATE TABLE "missions"
 CREATE TABLE "hardware"
 (
     "id"   bigserial PRIMARY KEY,
-    "name" varchar(100) NOT NULL
+    "name" varchar(100) UNIQUE NOT NULL
 );
 
 
@@ -38,7 +38,7 @@ CREATE TABLE "firmware"
     "id"       bigserial PRIMARY KEY,
     "name"     varchar(100) NOT NULL,
     "type"     integer      NOT NULL,
-    "oci_name" varchar(100) NOT NULL,
+    "oci_name" varchar(100) UNIQUE NOT NULL,
     CONSTRAINT firmware_firmware_types_fk FOREIGN KEY (type) REFERENCES firmware_types (id)
 );
 

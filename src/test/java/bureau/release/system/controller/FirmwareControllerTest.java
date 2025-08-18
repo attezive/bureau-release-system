@@ -3,8 +3,9 @@ package bureau.release.system.controller;
 import bureau.release.system.service.ArtifactDownloader;
 import bureau.release.system.service.dto.FirmwareDto;
 import bureau.release.system.service.dto.FirmwareTypeDto;
-import bureau.release.system.service.dto.client.LayerAnnotation;
+import bureau.release.system.service.dto.client.LayerAnnotations;
 import bureau.release.system.service.dto.client.Manifest;
+import bureau.release.system.service.dto.client.ManifestAnnotation;
 import bureau.release.system.service.dto.client.ManifestLayer;
 import bureau.release.system.service.impl.FirmwareService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -136,13 +137,14 @@ class FirmwareControllerTest {
                 "project/talk", List.of(1L, 2L, 3L));
         Mockito.when(firmwareService.getFirmwareById(1)).thenReturn(firmwareDto);
 
-        LayerAnnotation firstLayerAnnotation = new LayerAnnotation("hello world.bin");
-        LayerAnnotation secondLayerAnnotation = new LayerAnnotation("bye world.bin");
+        LayerAnnotations firstLayerAnnotations = new LayerAnnotations("hello world.bin");
+        LayerAnnotations secondLayerAnnotations = new LayerAnnotations("bye world.bin");
         ManifestLayer firstManifestLayer = new ManifestLayer(MediaType.APPLICATION_OCTET_STREAM.toString(),
-                "sha256digest1", 10, firstLayerAnnotation);
+                "sha256digest1", 10, firstLayerAnnotations);
         ManifestLayer secondManifestLayer = new ManifestLayer(MediaType.APPLICATION_OCTET_STREAM.toString(),
-                "sha256digest2", 8, secondLayerAnnotation);
-        Manifest manifest = new Manifest("Talk", "v1", List.of(firstManifestLayer, secondManifestLayer));
+                "sha256digest2", 8, secondLayerAnnotations);
+        Manifest manifest = new Manifest("Talk", "v1", List.of(firstManifestLayer, secondManifestLayer),
+                new ManifestAnnotation("APPLICATION", null));
 
         Mockito.when(firmwareService.getFirmwareVersions(firmwareDto.getId())).thenReturn(List.of(manifest));
 

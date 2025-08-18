@@ -2,12 +2,14 @@ package bureau.release.system.controller;
 
 import bureau.release.system.service.dto.FirmwareDto;
 import bureau.release.system.service.dto.FirmwareTypeDto;
+import bureau.release.system.service.dto.client.ArtifactWebhook;
 import bureau.release.system.service.dto.client.Manifest;
 import bureau.release.system.service.dto.error.ErrorDto;
 import bureau.release.system.service.dto.error.ValidationErrorResponse;
 import bureau.release.system.service.impl.FirmwareService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Webhook;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -116,5 +118,29 @@ public class FirmwareController {
     public ResponseEntity<List<FirmwareTypeDto>> getFirmwareTypes() {
         log.info("GetFirmwareTypes");
         return ResponseEntity.ok(firmwareService.getFirmwareTypes());
+    }
+
+    @PostMapping("/harbor-webhook")
+    @Webhook(
+            name = "Вебхук прошивок с Harbor",
+            operation = @Operation(
+                    summary = "Получение нового загруженного артефакта, проверка на прошивку и загрузка",
+                    description = "Позволяет перехватить информацию о созданном артефакте, и при условии, " +
+                            "что он является прошивкой, создать на его базе прошивку в бд"
+            ))
+    public ResponseEntity<String> loadFirmwareWebhook(@RequestBody ArtifactWebhook payload) {
+        log.info("LoadFirmwareWebhook: {}", payload.getType());
+        log.debug("Webhook from Harbor: {}", payload);
+
+        if (payload.getType().equals("PUSH_ARTIFACT")) {
+            FirmwareDto firmware = firmwareService.hookFirmware(payload);
+            log.debug("Hooked firmware: {}", firmware);
+            if (firmware != null) {
+                log.info("CreateFirmware By Webhook: {}", firmware);
+                firmwareService.createFirmware(firmware);
+            }
+        }
+
+        return ResponseEntity.ok("Load successful");
     }
 }
