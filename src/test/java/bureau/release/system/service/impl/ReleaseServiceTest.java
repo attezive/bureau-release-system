@@ -125,24 +125,24 @@ class ReleaseServiceTest {
     }
 
     @Test
-    void createRelease() {
-        ReleaseDto releaseDto = new ReleaseDto();
-        releaseDto.setName("test");
-        releaseDto.setOciName("testrepo");
-        releaseDto.setMissionId(missionId);
-        releaseDto.setReference("reference");
-        releaseDto.setReleaseContent(releaseContentList);
+    void createRelease_byContent_createAndReturn() {
+        ReleaseDto requestReleaseDto = new ReleaseDto();
+        requestReleaseDto.setName("test");
+        requestReleaseDto.setOciName("testrepo");
+        requestReleaseDto.setMissionId(missionId);
+        requestReleaseDto.setReference("reference");
+        requestReleaseDto.setReleaseContent(releaseContentList);
 
         ReleaseStatus releaseStatus = ReleaseStatus.builder().name(ReleaseStatusDto.CREATED.name()).build();
         Mission mission = Mission.builder().id(missionId).build();
 
-        ReleaseDto correctReleaseDto = new ReleaseDto(releaseId, releaseDto.getName(), LocalDate.now(),
-                releaseDto.getOciName(), releaseDto.getReference(), null,
+        ReleaseDto expectedReleaseDto = new ReleaseDto(releaseId, requestReleaseDto.getName(), LocalDate.now(),
+                requestReleaseDto.getOciName(), requestReleaseDto.getReference(), null,
                 ReleaseStatusDto.valueOf(releaseStatus.getName()), releaseId, missionId,
                 releaseContentList);
 
         when(releaseStatusDao.findByName(ReleaseStatusDto.CREATED.name())).thenReturn(Optional.of(releaseStatus));
-        when(missionDao.findById(releaseDto.getMissionId())).thenReturn(Optional.of(mission));
+        when(missionDao.findById(requestReleaseDto.getMissionId())).thenReturn(Optional.of(mission));
         when(releaseDao.save(any(Release.class))).thenAnswer(inv -> {
             Release passedRelease = inv.getArgument(0, Release.class);
             passedRelease.setId(releaseId);
@@ -157,11 +157,11 @@ class ReleaseServiceTest {
 
         when(firmwareVersionDao.save(isNotNull())).thenReturn(null);
 
-        ReleaseDto releaseDtoResult = releaseService.createRelease(releaseDto);
-        assertEquals(correctReleaseDto, releaseDtoResult, "Incorrect releaseDto");
+        ReleaseDto receivedReleaseDto = releaseService.createRelease(requestReleaseDto);
+        assertEquals(expectedReleaseDto, receivedReleaseDto, "Incorrect releaseDto");
         verify(releaseStatusDao, Mockito.times(1)).findByName(ReleaseStatusDto.CREATED.name());
-        verify(missionDao, Mockito.times(1)).findById(releaseDto.getMissionId());
-        verify(releaseMapper, Mockito.times(1)).toEntity(releaseDto, releaseStatus, mission);
+        verify(missionDao, Mockito.times(1)).findById(requestReleaseDto.getMissionId());
+        verify(releaseMapper, Mockito.times(1)).toEntity(requestReleaseDto, releaseStatus, mission);
         verify(firmwareDao, Mockito.times(1)).findById(1L);
         verify(firmwareDao, Mockito.times(1)).findById(2L);
         verify(firmwareDao, Mockito.times(1)).findById(3L);
@@ -171,54 +171,54 @@ class ReleaseServiceTest {
     }
 
     @Test
-    void createReleaseByOrigin() {
-        ReleaseDto releaseDto = new ReleaseDto();
-        releaseDto.setName("test");
-        releaseDto.setOciName("testrepo");
-        releaseDto.setMissionId(missionId);
-        releaseDto.setReference("reference");
-        releaseDto.setOriginId(releaseId-1);
-        releaseDto.setReleaseContent(new ArrayList<>());
+    void createRelease_byOrigin_createAndReturn() {
+        ReleaseDto requestReleaseDto = new ReleaseDto();
+        requestReleaseDto.setName("test");
+        requestReleaseDto.setOciName("testrepo");
+        requestReleaseDto.setMissionId(missionId);
+        requestReleaseDto.setReference("reference");
+        requestReleaseDto.setOriginId(releaseId-1);
+        requestReleaseDto.setReleaseContent(new ArrayList<>());
 
         ReleaseStatus releaseStatus = ReleaseStatus.builder().name(ReleaseStatusDto.CREATED.name()).build();
         Mission mission = Mission.builder().id(missionId).build();
 
-        Release release = Release.builder().id(releaseId).name(releaseDto.getName()).status(releaseStatus)
-                .ociName(releaseDto.getOciName()).reference(releaseDto.getReference()).mission(mission)
+        Release originRelease = Release.builder().id(releaseId).name(requestReleaseDto.getName()).status(releaseStatus)
+                .ociName(requestReleaseDto.getOciName()).reference(requestReleaseDto.getReference()).mission(mission)
                 .releaseDate(LocalDate.now()).firmwareVersions(firmwareVersionList).build();
 
-        ReleaseDto correctReleaseDto = new ReleaseDto(release.getId(), release.getName(), release.getReleaseDate(),
-                release.getOciName(), release.getReference(), release.getDigest(),
-                ReleaseStatusDto.valueOf(releaseStatus.getName()), release.getId(), release.getMission().getId(),
-                releaseContentList);
+        ReleaseDto expectedReleaseDto = new ReleaseDto(originRelease.getId(), originRelease.getName(),
+                originRelease.getReleaseDate(), originRelease.getOciName(), originRelease.getReference(),
+                originRelease.getDigest(), ReleaseStatusDto.valueOf(releaseStatus.getName()), originRelease.getId(),
+                originRelease.getMission().getId(), releaseContentList);
 
         when(releaseStatusDao.findByName(ReleaseStatusDto.CREATED.name())).thenReturn(Optional.of(releaseStatus));
-        when(missionDao.findById(releaseDto.getMissionId())).thenReturn(Optional.of(mission));
+        when(missionDao.findById(requestReleaseDto.getMissionId())).thenReturn(Optional.of(mission));
         when(releaseDao.save(any(Release.class))).thenAnswer(inv -> {
             Release passedRelease = inv.getArgument(0, Release.class);
-            passedRelease.setId(release.getId());
+            passedRelease.setId(originRelease.getId());
             return passedRelease;
         });
 
         when(firmwareVersionDao.save(ArgumentMatchers.isNotNull())).thenReturn(null);
 
-        when(releaseDao.findById(releaseId-1)).thenReturn(Optional.of(release));
+        when(releaseDao.findById(releaseId-1)).thenReturn(Optional.of(originRelease));
 
-        ReleaseDto releaseDtoResult = releaseService.createRelease(releaseDto);
-        assertEquals(correctReleaseDto, releaseDtoResult, "Incorrect releaseDto");
+        ReleaseDto releaseDtoResult = releaseService.createRelease(requestReleaseDto);
+        assertEquals(expectedReleaseDto, releaseDtoResult, "Incorrect releaseDto");
         verify(releaseStatusDao, Mockito.times(1)).findByName(ReleaseStatusDto.CREATED.name());
-        verify(missionDao, Mockito.times(1)).findById(releaseDto.getMissionId());
-        verify(releaseMapper, Mockito.times(1)).toEntity(releaseDto, releaseStatus, mission);
+        verify(missionDao, Mockito.times(1)).findById(requestReleaseDto.getMissionId());
+        verify(releaseMapper, Mockito.times(1)).toEntity(requestReleaseDto, releaseStatus, mission);
         verify(releaseDao, Mockito.times(1)).findById(releaseId-1);
     }
 
     @Test
-    void createReleaseFailedByFirmware() {
-        ReleaseDto releaseDto = new ReleaseDto();
-        releaseDto.setName("test");
-        releaseDto.setOciName("testrepo");
-        releaseDto.setMissionId(missionId);
-        releaseDto.setReference("reference");
+    void createRelease_failedByIncorrectFirmware_throwsEntityNotFoundException() {
+        ReleaseDto requestReleaseDto = new ReleaseDto();
+        requestReleaseDto.setName("test");
+        requestReleaseDto.setOciName("testrepo");
+        requestReleaseDto.setMissionId(missionId);
+        requestReleaseDto.setReference("reference");
 
         List<ReleaseContentDto> releaseContentList = new ArrayList<>();
 
@@ -227,13 +227,13 @@ class ReleaseServiceTest {
         requestFirmwareVersionDto.setFirmwareId(4L);
 
         releaseContentList.add(new ReleaseContentDto(1L, List.of(requestFirmwareVersionDto)));
-        releaseDto.setReleaseContent(releaseContentList);
+        requestReleaseDto.setReleaseContent(releaseContentList);
 
         ReleaseStatus releaseStatus = ReleaseStatus.builder().name(ReleaseStatusDto.CREATED.name()).build();
         Mission mission = Mission.builder().id(missionId).build();
 
         when(releaseStatusDao.findByName(ReleaseStatusDto.CREATED.name())).thenReturn(Optional.of(releaseStatus));
-        when(missionDao.findById(releaseDto.getMissionId())).thenReturn(Optional.of(mission));
+        when(missionDao.findById(requestReleaseDto.getMissionId())).thenReturn(Optional.of(mission));
         when(releaseDao.save(any(Release.class))).thenAnswer(inv -> {
             Release passedRelease = inv.getArgument(0, Release.class);
             passedRelease.setId(releaseId);
@@ -247,31 +247,31 @@ class ReleaseServiceTest {
 
         EntityNotFoundException thrown = assertThrows(
                 EntityNotFoundException.class,
-                () -> releaseService.createRelease(releaseDto));
+                () -> releaseService.createRelease(requestReleaseDto));
 
         assertTrue(thrown.getMessage().contains("is not represented for Hardware"), "Incorrect message");
         verify(releaseStatusDao, Mockito.times(1)).findByName(ReleaseStatusDto.CREATED.name());
-        verify(missionDao, Mockito.times(1)).findById(releaseDto.getMissionId());
+        verify(missionDao, Mockito.times(1)).findById(requestReleaseDto.getMissionId());
         verify(releaseDao, Mockito.times(1)).save(any(Release.class));
         verify(firmwareDao, Mockito.times(1)).findById(4L);
         verify(hardwareDao, Mockito.times(1)).findById(1L);
     }
 
     @Test
-    void createReleaseFailedByOrigin() {
-        ReleaseDto releaseDto = new ReleaseDto();
-        releaseDto.setName("test");
-        releaseDto.setOciName("testrepo");
-        releaseDto.setMissionId(missionId);
-        releaseDto.setReference("reference");
-        releaseDto.setOriginId(releaseId-1);
-        releaseDto.setReleaseContent(new ArrayList<>());
+    void createRelease_failedByUnknownOriginId_throwsEntityNotFoundException() {
+        ReleaseDto requestReleaseDto = new ReleaseDto();
+        requestReleaseDto.setName("test");
+        requestReleaseDto.setOciName("testrepo");
+        requestReleaseDto.setMissionId(missionId);
+        requestReleaseDto.setReference("reference");
+        requestReleaseDto.setOriginId(releaseId-1);
+        requestReleaseDto.setReleaseContent(new ArrayList<>());
 
         ReleaseStatus releaseStatus = ReleaseStatus.builder().name(ReleaseStatusDto.CREATED.name()).build();
         Mission mission = Mission.builder().id(missionId).build();
 
         when(releaseStatusDao.findByName(ReleaseStatusDto.CREATED.name())).thenReturn(Optional.of(releaseStatus));
-        when(missionDao.findById(releaseDto.getMissionId())).thenReturn(Optional.of(mission));
+        when(missionDao.findById(requestReleaseDto.getMissionId())).thenReturn(Optional.of(mission));
         when(releaseDao.save(any(Release.class))).thenAnswer(inv -> {
             Release passedRelease = inv.getArgument(0, Release.class);
             passedRelease.setId(releaseId);
@@ -284,28 +284,28 @@ class ReleaseServiceTest {
 
         EntityNotFoundException thrown = assertThrows(
                 EntityNotFoundException.class,
-                () -> releaseService.createRelease(releaseDto));
+                () -> releaseService.createRelease(requestReleaseDto));
 
         assertTrue(thrown.getMessage().contains("Release not found"), "Incorrect message");
         verify(releaseStatusDao, Mockito.times(1)).findByName(ReleaseStatusDto.CREATED.name());
-        verify(missionDao, Mockito.times(1)).findById(releaseDto.getMissionId());
+        verify(missionDao, Mockito.times(1)).findById(requestReleaseDto.getMissionId());
         verify(releaseDao, Mockito.times(1)).save(any(Release.class));
         verify(releaseDao, Mockito.times(1)).findById(releaseId-1);
     }
 
     @Test
-    void getAllReleases() {
+    void getAllReleases_returnReleases() {
         ReleaseStatus releaseStatus = ReleaseStatus.builder().name(ReleaseStatusDto.CREATED.name()).build();
         Mission mission = Mission.builder().id(missionId).build();
 
         Release firstRelease = Release.builder().id(releaseId).name("First Release").status(releaseStatus)
                 .ociName("repo").reference("reference").mission(mission).releaseDate(LocalDate.now())
                 .firmwareVersions(firmwareVersionList).build();
-        ReleaseDto firstReleaseDto = releaseMapper.toDto(firstRelease);
+        ReleaseDto expectedFirstReleaseDto = releaseMapper.toDto(firstRelease);
         Release secondRelease = Release.builder().id(releaseId+1).name("First Release").status(releaseStatus)
                 .ociName("repo").reference("reference").mission(mission).releaseDate(LocalDate.now())
                 .firmwareVersions(firmwareVersionList).build();
-        ReleaseDto secondReleaseDto = releaseMapper.toDto(secondRelease);
+        ReleaseDto expectedSecondReleaseDto = releaseMapper.toDto(secondRelease);
 
         when(releaseDao.findByMission(missionId, PageRequest.of(0, 1)))
                 .thenReturn(new PageImpl<>(List.of(firstRelease)));
@@ -314,13 +314,13 @@ class ReleaseServiceTest {
         when(releaseDao.findAll(PageRequest.of(0, 2)))
                 .thenReturn(new PageImpl<>(List.of(firstRelease, secondRelease)));
 
-        List<ReleaseDto> checkedFirstReleaseDtoLIst = releaseService.getAllReleases(0, 1, missionId);
-        List<ReleaseDto> checkedSecondReleaseDtoLIst = releaseService.getAllReleases(1, 1, missionId);
-        List<ReleaseDto> checkedAllReleaseDtoLIst = releaseService.getAllReleases(0, 2, null);
+        List<ReleaseDto> receivedFirstReleaseDtoLIst = releaseService.getAllReleases(0, 1, missionId);
+        List<ReleaseDto> receivedSecondReleaseDtoLIst = releaseService.getAllReleases(1, 1, missionId);
+        List<ReleaseDto> receivedAllReleaseDtoLIst = releaseService.getAllReleases(0, 2, null);
 
-        assertEquals(List.of(firstReleaseDto), checkedFirstReleaseDtoLIst, "Incorrect firstReleaseDtoLIst");
-        assertEquals(List.of(secondReleaseDto), checkedSecondReleaseDtoLIst, "Incorrect secondReleaseDtoLIst");
-        assertEquals(List.of(firstReleaseDto, secondReleaseDto), checkedAllReleaseDtoLIst, "Incorrect allReleaseDtoLIst");
+        assertEquals(List.of(expectedFirstReleaseDto), receivedFirstReleaseDtoLIst, "Incorrect firstReleaseDtoLIst");
+        assertEquals(List.of(expectedSecondReleaseDto), receivedSecondReleaseDtoLIst, "Incorrect secondReleaseDtoLIst");
+        assertEquals(List.of(expectedFirstReleaseDto, expectedSecondReleaseDto), receivedAllReleaseDtoLIst, "Incorrect allReleaseDtoLIst");
         verify(releaseDao, Mockito.times(1)).findByMission(missionId, PageRequest.of(0, 1));
         verify(releaseDao, Mockito.times(1)).findByMission(missionId, PageRequest.of(1, 1));
         verify(releaseDao, Mockito.times(1)).findAll(PageRequest.of(0, 2));
@@ -329,39 +329,39 @@ class ReleaseServiceTest {
     }
 
     @Test
-    void getAllReleasesEmptyPage(){
+    void getAllReleases_whenReleasesEmpty_returnEmptyPage(){
         int page = 1;
         int pageSize = 10;
 
         when(releaseDao.findAll(PageRequest.of(page, pageSize))).thenReturn(new PageImpl<>(List.of()));
 
-        List<ReleaseDto> allReleaseList = releaseService.getAllReleases(page, pageSize, null);
+        List<ReleaseDto> receivedReleaseList = releaseService.getAllReleases(page, pageSize, null);
 
-        assertEquals(new ArrayList<>(), allReleaseList, "Incorrect Release page");
+        assertEquals(new ArrayList<>(), receivedReleaseList, "Incorrect Release page");
         verify(releaseDao, Mockito.times(1)).findAll(PageRequest.of(page, pageSize));
     }
 
     @Test
-    void getReleaseById() {
+    void getReleaseById_returnRelease() {
         ReleaseStatus releaseStatus = ReleaseStatus.builder().name(ReleaseStatusDto.CREATED.name()).build();
         Mission mission = Mission.builder().id(missionId).build();
 
         Release release = Release.builder().id(releaseId).name("Release").status(releaseStatus)
                 .ociName("repo").reference("reference").mission(mission).releaseDate(LocalDate.now())
                 .firmwareVersions(firmwareVersionList).build();
-        ReleaseDto releaseDto = releaseMapper.toDto(release);
+        ReleaseDto expectedReleaseDto = releaseMapper.toDto(release);
 
         when(releaseDao.findById(releaseId)).thenReturn(Optional.of(release));
 
-        ReleaseDto checkedReleaseDto = releaseService.getReleaseById(releaseId);
+        ReleaseDto receivedReleaseDto = releaseService.getReleaseById(releaseId);
 
-        assertEquals(releaseDto, checkedReleaseDto, "Incorrect releaseDto");
+        assertEquals(expectedReleaseDto, receivedReleaseDto, "Incorrect releaseDto");
         verify(releaseDao, Mockito.times(1)).findById(releaseId);
         verify(releaseMapper, Mockito.times(2)).toDto(release);
     }
 
     @Test
-    void getReleaseByIdFailed() {
+    void getRelease_failedByUnknownId_throwsEntityNotFoundException() {
         when(releaseDao.findById(releaseId)).thenReturn(Optional.empty());
 
         EntityNotFoundException thrown = assertThrows(
@@ -373,21 +373,21 @@ class ReleaseServiceTest {
     }
 
     @Test
-    void getReleaseStatuses() {
+    void getReleaseStatuses_returnStatuses() {
         int i = 1;
         List<ReleaseStatus> releaseStatusList = new ArrayList<>();
-        List<ReleaseStatusDto> releaseStatusDtoList = new ArrayList<>();
+        List<ReleaseStatusDto> expectedReleaseStatusDtoList = new ArrayList<>();
         for (ReleaseStatusDto releaseStatusDto : ReleaseStatusDto.values()) {
             ReleaseStatus releaseStatus = ReleaseStatus.builder().id(i++).name(releaseStatusDto.name()).build();
             releaseStatusList.add(releaseStatus);
-            releaseStatusDtoList.add(releaseStatusDto);
+            expectedReleaseStatusDtoList.add(releaseStatusDto);
         }
 
         when(releaseStatusDao.findAll()).thenReturn(releaseStatusList);
 
-        List<ReleaseStatusDto> checkedReleaseStatusList = releaseService.getReleaseStatuses();
+        List<ReleaseStatusDto> receivedReleaseStatusList = releaseService.getReleaseStatuses();
 
-        assertEquals(releaseStatusDtoList, checkedReleaseStatusList, "Incorrect releaseStatusList");
+        assertEquals(expectedReleaseStatusDtoList, receivedReleaseStatusList, "Incorrect releaseStatusList");
         verify(releaseStatusDao, Mockito.times(1)).findAll();
 
     }

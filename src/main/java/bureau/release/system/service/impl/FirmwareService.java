@@ -21,7 +21,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -39,7 +38,6 @@ public class FirmwareService {
     private final FirmwareTypeMapper firmwareTypeMapper;
     private final ArtifactDownloader artifactDownloader;
 
-    @PreAuthorize("hasAnyAuthority('admin', 'harbor')")
     @Transactional
     public FirmwareDto createFirmware(@Valid FirmwareDto firmwareDto) {
         FirmwareType firmwareType = firmwareTypeDao.findByName(firmwareDto.getType())
@@ -75,7 +73,6 @@ public class FirmwareService {
         return getManifests(firmware.getOciName());
     }
 
-    @PreAuthorize("hasAuthority('harbor')")
     public FirmwareDto hookFirmware(ArtifactWebhook artifactWebhook) {
         String tag = artifactWebhook.getEventData().getResources().getFirst().getTag();
         if (tag == null) return null;

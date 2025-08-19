@@ -1,4 +1,4 @@
-package bureau.release.system.service;
+package bureau.release.system.service.impl;
 
 import bureau.release.system.dal.UserDao;
 import bureau.release.system.service.dto.UserDto;

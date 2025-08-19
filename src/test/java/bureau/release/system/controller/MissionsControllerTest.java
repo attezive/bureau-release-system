@@ -1,5 +1,6 @@
 package bureau.release.system.controller;
 
+import bureau.release.system.config.SecurityWebConfig;
 import bureau.release.system.service.dto.MissionDto;
 import bureau.release.system.service.impl.MissionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithAnonymousUser;
@@ -19,7 +21,6 @@ import org.springframework.web.context.WebApplicationContext;
 
 import java.util.List;
 
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -28,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(MissionsController.class)
+@Import(SecurityWebConfig.class)
 class MissionsControllerTest {
 
     private MockMvc mockMvc;
@@ -103,8 +105,7 @@ class MissionsControllerTest {
 
         mockMvc.perform(post("/missions")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestMission))
-                        .with(csrf()))
+                        .content(objectMapper.writeValueAsString(requestMission)))
                 .andExpect(status().isCreated())
                 .andExpect(header().string(HttpHeaders.LOCATION, "/missions/1"))
                 .andExpect(jsonPath("$.id").value(1L))
@@ -129,8 +130,7 @@ class MissionsControllerTest {
 
         mockMvc.perform(post("/missions")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestMission))
-                        .with(csrf()))
+                        .content(objectMapper.writeValueAsString(requestMission)))
                 .andExpect(status().isCreated())
                 .andExpect(header().string(HttpHeaders.LOCATION, "/missions/1"))
                 .andExpect(jsonPath("$.id").value(1L))
@@ -145,7 +145,7 @@ class MissionsControllerTest {
     @Test
     @WithMockUser(authorities = "admin")
     void deleteMissionById_whenAdminAuthority_Successful() throws Exception {
-        mockMvc.perform(delete("/missions/1").with(csrf()))
+        mockMvc.perform(delete("/missions/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Successfully deleted"));
 
@@ -171,11 +171,10 @@ class MissionsControllerTest {
         mockMvc.perform(get("/missions/1"))
                 .andExpect(status().isUnauthorized());
 
-        mockMvc.perform(post("/missions")
-                        .with(csrf()))
+        mockMvc.perform(post("/missions"))
                 .andExpect(status().isUnauthorized());
 
-        mockMvc.perform(delete("/missions/1").with(csrf()))
+        mockMvc.perform(delete("/missions/1"))
                 .andExpect(status().isUnauthorized());
     }
 

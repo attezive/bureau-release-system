@@ -68,36 +68,36 @@ class HardwareServiceTest {
     }
 
     @Test
-    void createHardware() {
+    void createHardware_createAndReturn() {
         when(firmwareDao.findById(firstFirmwareId)).thenReturn(Optional.of(firstFirmware));
         when(firmwareDao.findById(secondFirmwareId)).thenReturn(Optional.of(secondFirmware));
 
-        HardwareDto hardwareDto = new HardwareDto();
-        hardwareDto.setName("Hardware");
-        hardwareDto.setFirmwareIds(firmwareIdsSet);
+        HardwareDto requestHardwareDto = new HardwareDto();
+        requestHardwareDto.setName("Hardware");
+        requestHardwareDto.setFirmwareIds(firmwareIdsSet);
 
-        when(hardwareDao.save(eq(hardwareMapper.toEntity(hardwareDto, firmwareSet, new ArrayList<>()))))
+        when(hardwareDao.save(eq(hardwareMapper.toEntity(requestHardwareDto, firmwareSet, new ArrayList<>()))))
                 .thenAnswer(inv -> {
                     Hardware hardware = inv.getArgument(0, Hardware.class);
                     hardware.setId(hardwareId);
                     return hardware;
                 });
 
-        HardwareDto hardwareDtoResult = hardwareService.createHardware(hardwareDto);
+        HardwareDto receivedHardwareDto = hardwareService.createHardware(requestHardwareDto);
 
-        assertEquals(firmwareIdsSet, hardwareDtoResult.getFirmwareIds(), "Incorrect firmware ids set");
-        assertEquals(hardwareId, hardwareDtoResult.getId(), "Incorrect hardware id");
-        assertEquals(hardwareDto.getName(), hardwareDtoResult.getName(), "Incorrect hardware name");
+        assertEquals(firmwareIdsSet, receivedHardwareDto.getFirmwareIds(), "Incorrect firmware ids set");
+        assertEquals(hardwareId, receivedHardwareDto.getId(), "Incorrect hardware id");
+        assertEquals(requestHardwareDto.getName(), receivedHardwareDto.getName(), "Incorrect hardware name");
         verify(firmwareDao, Mockito.times(1)).findById(firstFirmwareId);
         verify(firmwareDao, Mockito.times(1)).findById(secondFirmwareId);
         verify(hardwareMapper, Mockito.times(1)).toDto(any(Hardware.class));
         verify(hardwareMapper, Mockito.times(2))
-                .toEntity(hardwareDto, firmwareSet, new ArrayList<>());
+                .toEntity(requestHardwareDto, firmwareSet, new ArrayList<>());
         verify(hardwareDao, Mockito.times(1)).save(any(Hardware.class));
     }
 
     @Test
-    void createHardwareFailed() {
+    void createHardware_failedByUnknownFirmware_throwsEntityNotFoundException() {
         when(firmwareDao.findById(firstFirmwareId)).thenReturn(Optional.empty());
 
         HardwareDto hardwareDto = new HardwareDto();
@@ -114,7 +114,7 @@ class HardwareServiceTest {
     }
 
     @Test
-    void getAllHardware() {
+    void getAllHardware_returnHardwareList() {
         Mission firstMission = Mission.builder().id(1).build();
         Mission secondMission = Mission.builder().id(2).build();
 
@@ -130,19 +130,19 @@ class HardwareServiceTest {
                 .missions(new ArrayList<>()).firmwareList(List.of(secondFirmware)).build();
         HardwareDto thirdHardwareDto = hardwareMapper.toDto(thirdHardware);
 
-        List<HardwareDto> hardwareList = List.of(firstHardwareDto, secondHardwareDto, thirdHardwareDto);
+        List<HardwareDto> expectedHardwareList = List.of(firstHardwareDto, secondHardwareDto, thirdHardwareDto);
 
         when(hardwareDao.findAll()).thenReturn(List.of(firstHardware, secondHardware, thirdHardware));
 
         List<HardwareDto> allHardwareList = hardwareService.getAllHardware();
 
-        assertEquals(hardwareList, allHardwareList, "Incorrect hardware list");
+        assertEquals(expectedHardwareList, allHardwareList, "Incorrect hardware list");
         verify(hardwareDao, Mockito.times(1)).findAll();
         verify(hardwareMapper, Mockito.times(6)).toDto(any(Hardware.class));
     }
 
     @Test
-    void getEmptyHardware() {
+    void getAllHardware_whenHardwareEmpty_returnEmptyList() {
         when(hardwareDao.findAll()).thenReturn(new ArrayList<>());
 
         List<HardwareDto> allHardwareList = hardwareService.getAllHardware();
@@ -152,7 +152,7 @@ class HardwareServiceTest {
     }
 
     @Test
-    void getHardwareByMissionId() {
+    void getHardwareByMissionId_returnHardwareList() {
         Integer missionId = 1;
         Mission mission = Mission.builder().id(missionId).hardwareList(new ArrayList<>()).build();
 
@@ -166,19 +166,19 @@ class HardwareServiceTest {
         HardwareDto secondHardwareDto = hardwareMapper.toDto(secondHardware);
         mission.getHardwareList().add(secondHardware);
 
-        List<HardwareDto> hardwareList = List.of(firstHardwareDto, secondHardwareDto);
+        List<HardwareDto> expectedHardwareList = List.of(firstHardwareDto, secondHardwareDto);
 
         when(missionDao.findById(missionId)).thenReturn(Optional.of(mission));
 
-        List<HardwareDto> allHardwareList = hardwareService.getHardwareByMissionId(missionId);
+        List<HardwareDto> receivedHardwareList = hardwareService.getHardwareByMissionId(missionId);
 
-        assertEquals(hardwareList, allHardwareList, "Incorrect hardware list");
+        assertEquals(expectedHardwareList, receivedHardwareList, "Incorrect hardware list");
         verify(missionDao, Mockito.times(1)).findById(missionId);
         verify(hardwareMapper, Mockito.times(4)).toDto(any(Hardware.class));
     }
 
     @Test
-    void getHardwareByMissionIdFailed() {
+    void getHardwareByMissionId_failedByUnknownMission_throwsEntityNotFoundException() {
         int missionId = 1;
         when(missionDao.findById(missionId)).thenReturn(Optional.empty());
 
@@ -191,23 +191,23 @@ class HardwareServiceTest {
     }
 
     @Test
-    void getHardwareById() {
+    void getHardwareById_returnHardware() {
         Mission mission = Mission.builder().id(1).build();
 
         Hardware hardware = Hardware.builder().id(hardwareId).name("Hardware")
                 .missions(List.of(mission)).firmwareList(firmwareSet).build();
-        HardwareDto correctHardwareDto = hardwareMapper.toDto(hardware);
+        HardwareDto expectedHardwareDto = hardwareMapper.toDto(hardware);
 
         when(hardwareDao.findById(hardwareId)).thenReturn(Optional.of(hardware));
 
-        HardwareDto hardwareDto = hardwareService.getHardwareById(hardwareId);
+        HardwareDto receivedhardwareDto = hardwareService.getHardwareById(hardwareId);
 
-        assertEquals(correctHardwareDto, hardwareDto, "Incorrect hardware");
+        assertEquals(expectedHardwareDto, receivedhardwareDto, "Incorrect hardware");
         verify(hardwareDao, Mockito.times(1)).findById(hardwareId);
     }
 
     @Test
-    void getHardwareByIdFailed() {
+    void getHardwareById_failedByUnknownId_throwsEntityNotFoundException() {
         when(hardwareDao.findById(hardwareId)).thenReturn(Optional.empty());
 
         EntityNotFoundException thrown = assertThrows(

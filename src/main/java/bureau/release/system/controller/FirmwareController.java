@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -51,6 +52,7 @@ public class FirmwareController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('admin', 'harbor')")
     @Operation(
             summary = "Создание новой прошивки",
             description = "Позволяет создать новую прошивку, исходя из переданных данных. (Admin rules only)",
@@ -121,6 +123,7 @@ public class FirmwareController {
     }
 
     @PostMapping("/harbor-webhook")
+    @PreAuthorize("hasAuthority('harbor')")
     @Webhook(
             name = "Вебхук прошивок с Harbor",
             operation = @Operation(

@@ -1,5 +1,6 @@
 package bureau.release.system.controller;
 
+import bureau.release.system.config.SecurityWebConfig;
 import bureau.release.system.service.dto.FirmwareVersionDto;
 import bureau.release.system.service.dto.ReleaseContentDto;
 import bureau.release.system.service.dto.ReleaseDto;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithAnonymousUser;
@@ -23,13 +25,13 @@ import org.springframework.web.context.WebApplicationContext;
 import java.time.LocalDate;
 import java.util.List;
 
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ReleasesController.class)
+@Import(SecurityWebConfig.class)
 class ReleasesControllerTest {
 
     private MockMvc mockMvc;
@@ -60,7 +62,7 @@ class ReleasesControllerTest {
 
         FirmwareVersionDto thirdVersion = new FirmwareVersionDto(3L, "v2", 1L, 2L, 1L);
         ReleaseContentDto secondReleaseContent = new ReleaseContentDto(1L, List.of(thirdVersion));
-        ReleaseDto secondReleaseDto = new ReleaseDto(2L, "Second Release", LocalDate.now(), "project/repo", "v2",
+        ReleaseDto secondReleaseDto = new ReleaseDto(2L, "Second Release", LocalDate.now(), "project/repo2", "v2",
                 null, ReleaseStatusDto.CREATED, 2L, 2, List.of(secondReleaseContent));
 
         List<ReleaseDto> releaseDtoList = List.of(firstReleaseDto, secondReleaseDto);
@@ -94,7 +96,7 @@ class ReleasesControllerTest {
                 .andExpect(jsonPath("$[1].id").value(2L))
                 .andExpect(jsonPath("$[1].name").value("Second Release"))
                 .andExpect(jsonPath("$[1].releaseDate").value(LocalDate.now().toString()))
-                .andExpect(jsonPath("$[1].ociName").value("project/repo"))
+                .andExpect(jsonPath("$[1].ociName").value("project/repo2"))
                 .andExpect(jsonPath("$[1].reference").value("v2"))
                 .andExpect(jsonPath("$[1].digest").doesNotExist())
                 .andExpect(jsonPath("$[1].status").value(ReleaseStatusDto.CREATED.name()))
@@ -257,7 +259,7 @@ class ReleasesControllerTest {
 
         Mockito.when(releaseService.uploadRelease(1L)).thenReturn(firstReleaseDto);
 
-        mockMvc.perform(post("/releases/1").with(csrf()))
+        mockMvc.perform(post("/releases/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.name").value("First Release"))
@@ -294,7 +296,7 @@ class ReleasesControllerTest {
 
         Mockito.when(releaseService.uploadRelease(1L)).thenReturn(firstReleaseDto);
 
-        mockMvc.perform(post("/releases/1").with(csrf()))
+        mockMvc.perform(post("/releases/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.name").value("First Release"))
@@ -348,8 +350,7 @@ class ReleasesControllerTest {
 
         mockMvc.perform(post("/releases")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestReleaseDto))
-                        .with(csrf()))
+                        .content(objectMapper.writeValueAsString(requestReleaseDto)))
                 .andExpect(status().isCreated())
                 .andExpect(header().string(HttpHeaders.LOCATION, "/releases/1"))
                 .andExpect(jsonPath("$.id").value(1L))
@@ -404,8 +405,7 @@ class ReleasesControllerTest {
 
         mockMvc.perform(post("/releases")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestReleaseDto))
-                        .with(csrf()))
+                        .content(objectMapper.writeValueAsString(requestReleaseDto)))
                 .andExpect(status().isCreated())
                 .andExpect(header().string(HttpHeaders.LOCATION, "/releases/1"))
                 .andExpect(jsonPath("$.id").value(1L))
@@ -456,12 +456,10 @@ class ReleasesControllerTest {
         mockMvc.perform(get("/releases/statuses"))
                 .andExpect(status().isUnauthorized());
 
-        mockMvc.perform(post("/releases/1")
-                        .with(csrf()))
+        mockMvc.perform(post("/releases/1"))
                 .andExpect(status().isUnauthorized());
 
-        mockMvc.perform(post("/releases")
-                        .with(csrf()))
+        mockMvc.perform(post("/releases"))
                 .andExpect(status().isUnauthorized());
     }
 
