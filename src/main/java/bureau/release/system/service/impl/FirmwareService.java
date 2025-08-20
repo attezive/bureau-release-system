@@ -2,6 +2,7 @@ package bureau.release.system.service.impl;
 
 import bureau.release.system.dal.FirmwareDao;
 import bureau.release.system.dal.FirmwareTypeDao;
+import bureau.release.system.dal.ReleaseDao;
 import bureau.release.system.exception.ClientException;
 import bureau.release.system.exception.ReleaseSystemException;
 import bureau.release.system.model.Firmware;
@@ -34,6 +35,7 @@ import java.util.List;
 public class FirmwareService {
     private final FirmwareDao firmwareDao;
     private final FirmwareTypeDao firmwareTypeDao;
+    private final ReleaseDao releaseDao;
     private final FirmwareMapper firmwareMapper;
     private final FirmwareTypeMapper firmwareTypeMapper;
     private final ArtifactDownloader artifactDownloader;
@@ -73,23 +75,7 @@ public class FirmwareService {
         return getManifests(firmware.getOciName());
     }
 
-    public FirmwareDto hookFirmware(ArtifactWebhook artifactWebhook) {
-        String tag = artifactWebhook.getEventData().getResources().getFirst().getTag();
-        if (tag == null) return null;
-
-        String ociName = artifactWebhook.getEventData().getRepository().getRepoFullName();
-
-        Manifest manifest = artifactDownloader.getManifest(ociName, tag);
-
-        FirmwareDto firmwareDto = new FirmwareDto();
-        firmwareDto.setName(artifactWebhook.getEventData().getRepository().getName());
-        firmwareDto.setOciName(ociName);
-        firmwareDto.setType(manifest.getAnnotations().getType());
-
-        return firmwareDto;
-    }
-
-    public List<Manifest> getManifests(String ociName) {
+    private List<Manifest> getManifests(String ociName) {
         List<Manifest> manifests;
         try {
             manifests = artifactDownloader.getArtifacts(ociName);
@@ -99,5 +85,28 @@ public class FirmwareService {
             throw new ClientException(e.getMessage());
         }
         return manifests;
+    }
+
+    public FirmwareDto hookFirmware(ArtifactWebhook artifactWebhook) {
+        String ociName = artifactWebhook.getEventData().getRepository().getRepoFullName();
+
+        List<String> releaseOciNames = releaseDao.findReleaseOciNames();
+
+        if (releaseOciNames.contains(ociName)) return null;
+
+        Manifest manifest = artifactDownloader.getManifest(
+                ociName,
+                artifactWebhook.getEventData().getResources().getFirst().getTag()
+        );
+
+        String firmwareType = manifest.getAnnotations().getType();
+        if (firmwareType == null) return null;
+
+        FirmwareDto firmwareDto = new FirmwareDto();
+        firmwareDto.setName(artifactWebhook.getEventData().getRepository().getName());
+        firmwareDto.setOciName(ociName);
+        firmwareDto.setType(firmwareType);
+
+        return firmwareDto;
     }
 }

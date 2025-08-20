@@ -33,9 +33,9 @@ public class MissionsController {
             summary = "Получение списка миссий",
             description = "Позволяет получить список всех миссий"
     )
-    public ResponseEntity<List<MissionDto>> getMissions() {
+    public List<MissionDto> getMissions() {
         log.info("GetMissions");
-        return ResponseEntity.ok(missionService.getAllMissions());
+        return missionService.getAllMissions();
     }
 
     @PostMapping
@@ -72,11 +72,11 @@ public class MissionsController {
                             content = @Content(schema = @Schema(implementation = ErrorDto.class)))
             }
     )
-    public ResponseEntity<MissionDto> getMissionById(
+    public MissionDto getMissionById(
             @PathVariable @Parameter(description = "Id запрашиваемой миссии", example = "1") int missionId
     ) {
         log.info("GetMission: id={}", missionId);
-        return ResponseEntity.ok(missionService.getMissionById(missionId));
+        return missionService.getMissionById(missionId);
     }
 
     @DeleteMapping("/{missionId}")
@@ -85,11 +85,11 @@ public class MissionsController {
             description = "Позволяет удалить данные о миссии, исходя из переданного id. Исходя из особеннойстей " +
                     "устройства базы данных, ошибка не будет возвращена даже при неправильном id. (Admin rules only)"
     )
-    public ResponseEntity<ErrorDto> deleteMission(
+    public ErrorDto deleteMission(
             @PathVariable @Parameter(description = "Id удаляемой миссии", example = "1") int missionId
     ) {
         log.info("Delete Mission: id={}", missionId);
         missionService.deleteMission(missionId);
-        return ResponseEntity.ok(new ErrorDto("Successfully deleted"));
+        return new ErrorDto("Successfully deleted");
     }
 }

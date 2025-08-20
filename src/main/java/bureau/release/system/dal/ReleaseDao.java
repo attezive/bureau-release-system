@@ -7,7 +7,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface ReleaseDao extends JpaRepository<Release, Long> {
     @Query("SELECT r FROM Release r WHERE r.mission.id = :id")
     Page<Release> findByMission(@Param("id") Integer missionId, Pageable pageable);
+
+    @Query("SELECT DISTINCT r.ociName FROM Release r")
+    List<String> findReleaseOciNames();
 }

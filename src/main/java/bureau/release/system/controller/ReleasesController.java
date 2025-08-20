@@ -41,13 +41,13 @@ public class ReleasesController {
                             content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class)))
             }
     )
-    public ResponseEntity<List<ReleaseDto>> getReleases(
+    public List<ReleaseDto> getReleases(
             @RequestParam(required = false, defaultValue = "0") @Parameter(description = "Номер страницы") int page,
             @RequestParam(required = false, defaultValue = "1") @Parameter(description = "Размер страницы") int size,
             @RequestParam(required = false) @Parameter(description = "Id миссии для фильтра релизов") Integer missionId
     ) {
         log.info("GetReleases: page={}, size={}, missionId={}", page, size, missionId);
-        return ResponseEntity.ok(releaseService.getAllReleases(page, size, missionId));
+        return releaseService.getAllReleases(page, size, missionId);
     }
 
     @PostMapping
@@ -84,11 +84,11 @@ public class ReleasesController {
                             content = @Content(schema = @Schema(implementation = ErrorDto.class)))
             }
     )
-    public ResponseEntity<ReleaseDto> getReleaseById(
+    public ReleaseDto getReleaseById(
             @PathVariable @Parameter(description = "Id запрашиваемого релиза", example = "1") long releaseId
     ) {
         log.info("GetReleaseById: id={}", releaseId);
-        return ResponseEntity.ok(releaseService.getReleaseById(releaseId));
+        return releaseService.getReleaseById(releaseId);
     }
 
     @PostMapping("/{releaseId}")
@@ -153,8 +153,8 @@ public class ReleasesController {
             summary = "Получение списка статусов релизов",
             description = "Позволяет получить список статусов релизов"
     )
-    public ResponseEntity<List<ReleaseStatusDto>> getReleaseStatuses() {
+    public List<ReleaseStatusDto> getReleaseStatuses() {
         log.info("GetReleaseStatuses");
-        return ResponseEntity.ok(releaseService.getReleaseStatuses());
+        return releaseService.getReleaseStatuses();
     }
 }

@@ -43,12 +43,12 @@ public class FirmwareController {
                             content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class)))
             }
     )
-    public ResponseEntity<List<FirmwareDto>> getFirmware(
+    public List<FirmwareDto> getFirmware(
             @RequestParam(required = false, defaultValue = "0") @Parameter(description = "Номер страницы") int page,
             @RequestParam(required = false, defaultValue = "1") @Parameter(description = "Размер страницы") int size
     ) {
         log.info("GetFirmware: page={}, size={}", page, size);
-        return ResponseEntity.ok(firmwareService.getAllFirmware(page, size));
+        return firmwareService.getAllFirmware(page, size);
     }
 
     @PostMapping
@@ -86,11 +86,11 @@ public class FirmwareController {
                             content = @Content(schema = @Schema(implementation = ErrorDto.class)))
             }
     )
-    public ResponseEntity<FirmwareDto> getFirmwareById(
+    public FirmwareDto getFirmwareById(
             @PathVariable @Parameter(description = "Id запрашиваемой прошивки", example = "1") long firmwareId
     ) {
         log.info("GetFirmwareById: id={}", firmwareId);
-        return ResponseEntity.ok(firmwareService.getFirmwareById(firmwareId));
+        return firmwareService.getFirmwareById(firmwareId);
     }
 
     @GetMapping("/{firmwareId}/versions")
@@ -105,11 +105,11 @@ public class FirmwareController {
                             content = @Content(schema = @Schema(implementation = ErrorDto.class)))
             }
     )
-    public ResponseEntity<List<Manifest>> getFirmwareVersions(
+    public List<Manifest> getFirmwareVersions(
             @PathVariable @Parameter(description = "Id запрашиваемой прошивки", example = "1") long firmwareId
     ) {
         log.info("GetFirmwareVersions: id={}", firmwareId);
-        return ResponseEntity.ok(firmwareService.getFirmwareVersions(firmwareId));
+        return firmwareService.getFirmwareVersions(firmwareId);
     }
 
     @GetMapping("/types")
@@ -117,9 +117,9 @@ public class FirmwareController {
             summary = "Получение списка типов прошивок",
             description = "Позволяет получить список типов прошивок"
     )
-    public ResponseEntity<List<FirmwareTypeDto>> getFirmwareTypes() {
+    public List<FirmwareTypeDto> getFirmwareTypes() {
         log.info("GetFirmwareTypes");
-        return ResponseEntity.ok(firmwareService.getFirmwareTypes());
+        return firmwareService.getFirmwareTypes();
     }
 
     @PostMapping("/harbor-webhook")
@@ -131,7 +131,7 @@ public class FirmwareController {
                     description = "Позволяет перехватить информацию о созданном артефакте, и при условии, " +
                             "что он является прошивкой, создать на его базе прошивку в бд"
             ))
-    public ResponseEntity<String> loadFirmwareWebhook(@RequestBody ArtifactWebhook payload) {
+    public ErrorDto loadFirmwareWebhook(@RequestBody ArtifactWebhook payload) {
         log.info("LoadFirmwareWebhook: {}", payload.getType());
         log.debug("Webhook from Harbor: {}", payload);
 
@@ -144,6 +144,6 @@ public class FirmwareController {
             }
         }
 
-        return ResponseEntity.ok("Load successful");
+        return new ErrorDto("Load successful");
     }
 }

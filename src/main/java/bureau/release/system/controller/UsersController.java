@@ -33,9 +33,9 @@ public class UsersController {
             summary = "Получение списка пользователей",
             description = "Позволяет получить список всех пользователей"
     )
-    public ResponseEntity<List<UserDto>> getAllUsers() {
+    public List<UserDto> getAllUsers() {
         log.info("getAllUsers");
-        return ResponseEntity.ok(userService.getAllUsers());
+        return userService.getAllUsers();
     }
 
     @GetMapping("/{username}")
@@ -50,11 +50,11 @@ public class UsersController {
                             content = @Content(schema = @Schema(implementation = ErrorDto.class)))
             }
     )
-    public ResponseEntity<UserDto> getUserByUsername(
+    public UserDto getUserByUsername(
             @PathVariable @Parameter(description = "Имя пользователя", example = "user") String username
     ) {
         log.info("GetUserByUsername: username={}", username);
-        return ResponseEntity.ok(userService.getUserByUsername(username));
+        return userService.getUserByUsername(username);
     }
 
     @GetMapping("/authorities/{authority}")
@@ -67,11 +67,11 @@ public class UsersController {
                             content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class)))
             }
     )
-    public ResponseEntity<UsernameListDto> getUsernamesByAuthority(
+    public UsernameListDto getUsernamesByAuthority(
             @PathVariable @Parameter(description = "Доступ пользователей", example = "user") String authority
     ) {
         log.info("GetUsernamesByAuthority: authority={}", authority);
-        return ResponseEntity.ok(userService.getUsernamesByAuthority(authority));
+        return userService.getUsernamesByAuthority(authority);
     }
 
     @PostMapping
