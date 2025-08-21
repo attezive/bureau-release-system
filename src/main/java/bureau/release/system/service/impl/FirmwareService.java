@@ -7,6 +7,7 @@ import bureau.release.system.exception.ClientException;
 import bureau.release.system.exception.ReleaseSystemException;
 import bureau.release.system.model.Firmware;
 import bureau.release.system.model.FirmwareType;
+import bureau.release.system.monitoring.FirmwareHookMetricService;
 import bureau.release.system.service.ArtifactDownloader;
 import bureau.release.system.service.dto.FirmwareDto;
 import bureau.release.system.service.dto.FirmwareTypeDto;
@@ -39,6 +40,7 @@ public class FirmwareService {
     private final FirmwareMapper firmwareMapper;
     private final FirmwareTypeMapper firmwareTypeMapper;
     private final ArtifactDownloader artifactDownloader;
+    private final FirmwareHookMetricService firmwareHookMetricService;
 
     @Transactional
     public FirmwareDto createFirmware(@Valid FirmwareDto firmwareDto) {
@@ -88,11 +90,16 @@ public class FirmwareService {
     }
 
     public FirmwareDto hookFirmware(ArtifactWebhook artifactWebhook) {
+        firmwareHookMetricService.incrementTotalFirmwareMetric();
+
         String ociName = artifactWebhook.getEventData().getRepository().getRepoFullName();
 
         List<String> releaseOciNames = releaseDao.findReleaseOciNames();
 
-        if (releaseOciNames.contains(ociName)) return null;
+        if (releaseOciNames.contains(ociName)) {
+            log.debug("Hook is Release");
+            return null;
+        }
 
         Manifest manifest = artifactDownloader.getManifest(
                 ociName,
@@ -100,7 +107,10 @@ public class FirmwareService {
         );
 
         String firmwareType = manifest.getAnnotations().getType();
-        if (firmwareType == null) return null;
+        if (firmwareType == null) {
+            firmwareHookMetricService.incrementFakeFirmwareMetric();
+            return null;
+        }
 
         FirmwareDto firmwareDto = new FirmwareDto();
         firmwareDto.setName(artifactWebhook.getEventData().getRepository().getName());

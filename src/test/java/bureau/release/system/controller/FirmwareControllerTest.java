@@ -1,6 +1,7 @@
 package bureau.release.system.controller;
 
 import bureau.release.system.config.SecurityWebConfig;
+import bureau.release.system.monitoring.WebhookEventTypeMetricService;
 import bureau.release.system.service.ArtifactDownloader;
 import bureau.release.system.service.dto.FirmwareDto;
 import bureau.release.system.service.dto.FirmwareTypeDto;
@@ -47,6 +48,9 @@ class FirmwareControllerTest {
 
     @MockitoBean
     private ArtifactDownloader artifactDownloader;
+
+    @MockitoBean
+    private WebhookEventTypeMetricService webhookEventTypeMetricService;
 
     @BeforeEach
     void setUp(WebApplicationContext webApplicationContext) {

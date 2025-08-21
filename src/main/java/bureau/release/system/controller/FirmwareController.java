@@ -1,5 +1,6 @@
 package bureau.release.system.controller;
 
+import bureau.release.system.monitoring.WebhookEventTypeMetricService;
 import bureau.release.system.service.dto.FirmwareDto;
 import bureau.release.system.service.dto.FirmwareTypeDto;
 import bureau.release.system.service.dto.client.ArtifactWebhook;
@@ -32,6 +33,7 @@ import java.util.List;
 @Tag(name = "Контроллер прошивок", description = "Управление прошивками")
 public class FirmwareController {
     private final FirmwareService firmwareService;
+    private final WebhookEventTypeMetricService webhookEventTypeMetricService;
 
     @GetMapping
     @Operation(
@@ -132,15 +134,21 @@ public class FirmwareController {
                             "что он является прошивкой, создать на его базе прошивку в бд"
             ))
     public ErrorDto loadFirmwareWebhook(@RequestBody ArtifactWebhook payload) {
-        log.info("LoadFirmwareWebhook: {}", payload.getType());
+        String eventType = payload.getType();
+
+        log.info("LoadFirmwareWebhook: {}", eventType);
         log.debug("Webhook from Harbor: {}", payload);
 
-        if (payload.getType().equals("PUSH_ARTIFACT")) {
+        webhookEventTypeMetricService.recordEvent(eventType);
+
+        if (eventType.equals("PUSH_ARTIFACT")) {
             FirmwareDto firmware = firmwareService.hookFirmware(payload);
             log.debug("Hooked firmware: {}", firmware);
             if (firmware != null) {
                 log.info("CreateFirmware By Webhook: {}", firmware);
                 firmwareService.createFirmware(firmware);
+            } else {
+                log.info("Firmware Not Found By Webhook: {}", payload.getEventData());
             }
         }
 

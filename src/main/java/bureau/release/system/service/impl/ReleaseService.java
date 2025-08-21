@@ -5,6 +5,7 @@ import bureau.release.system.exception.ClientException;
 import bureau.release.system.exception.ReleaseStreamException;
 import bureau.release.system.exception.ReleaseSystemException;
 import bureau.release.system.model.*;
+import bureau.release.system.monitoring.FirmwareDistributionMetricService;
 import bureau.release.system.service.ArtifactDownloader;
 import bureau.release.system.service.ArtifactUploader;
 import bureau.release.system.service.dto.FirmwareVersionDto;
@@ -46,6 +47,7 @@ public class ReleaseService {
     private final ArtifactUploader artifactUploader;
     private final FirmwareVersionMapper firmwareVersionMapper;
     private final ReleaseMapper releaseMapper;
+    private final FirmwareDistributionMetricService firmwareDistributionMetricService;
 
     @Transactional
     public ReleaseDto createRelease(@Valid ReleaseDto releaseDto) {
@@ -89,13 +91,13 @@ public class ReleaseService {
 
                 FirmwareVersion firmwareVersion = firmwareVersionMapper
                         .toEntity(firmwareVersionDto, firmware, hardware, release);
+                firmwareDistributionMetricService.recordFirmware(firmware);
                 firmwareVersionDao.save(firmwareVersion);
                 firmwareVersionDtoList.add(firmwareVersionMapper.toDto(firmwareVersion));
             }
             releaseContentDto.setFirmwareVersions(firmwareVersionDtoList);
             releaseContentList.add(releaseContentDto);
         }
-
         if (releaseDto.getOriginId() != null) {
             List<ReleaseContentDto> originReleaseContent = setupByOrigin(
                     release, releaseDto.getOriginId(), releaseContentList);
@@ -130,6 +132,7 @@ public class ReleaseService {
                         .release(release)
                         .hardware(originFirmwareVersion.getHardware())
                         .build();
+                firmwareDistributionMetricService.recordFirmware(firmwareVersion.getFirmware());
                 firmwareVersionDao.save(firmwareVersion);
                 releaseContentMap.get(hardwareId).add(firmwareVersionMapper.toDto(firmwareVersion));
             }

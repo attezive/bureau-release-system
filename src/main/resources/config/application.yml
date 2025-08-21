@@ -33,3 +33,21 @@ feign:
         readTimeout: 30000
         loggerLevel: basic
         forceDecoding: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+      base-path: /monitor
+  endpoint:
+    health:
+      show-details: when_authorized
+      roles: admin
+  info:
+    env:
+      enabled: true
+info:
+  application:
+    name: release-system
+    description: releases management system application
+    version: 0.0.1-SNAPSHOT

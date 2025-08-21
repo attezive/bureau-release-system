@@ -2,6 +2,7 @@ package bureau.release.system.service.impl;
 
 import bureau.release.system.dal.*;
 import bureau.release.system.model.*;
+import bureau.release.system.monitoring.FirmwareDistributionMetricService;
 import bureau.release.system.service.ArtifactDownloader;
 import bureau.release.system.service.ArtifactUploader;
 import bureau.release.system.service.dto.*;
@@ -62,6 +63,9 @@ class ReleaseServiceTest {
 
     @MockitoBean
     private ArtifactUploader artifactUploader;
+
+    @MockitoBean
+    private FirmwareDistributionMetricService firmwareDistributionMetricService;
 
     @MockitoSpyBean
     private FirmwareVersionMapper firmwareVersionMapper;
