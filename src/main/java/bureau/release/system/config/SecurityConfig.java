@@ -65,6 +65,7 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers(HttpMethod.DELETE).hasAuthority(properties.authority())
                         .requestMatchers( "/users/**").hasAuthority(properties.authority())
+                        .requestMatchers("/monitor/**").hasAnyAuthority(properties.authority(), "metricListener")
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults())
                 .build();

@@ -42,7 +42,7 @@ management:
   endpoint:
     health:
       show-details: when_authorized
-      roles: admin
+      roles: admin, metricListener
   info:
     env:
       enabled: true
