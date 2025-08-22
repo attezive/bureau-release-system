@@ -172,6 +172,7 @@ class ReleaseServiceTest {
         verify(hardwareDao, Mockito.times(2)).findById(1L);
         verify(hardwareDao, Mockito.times(1)).findById(2L);
         verify(firmwareVersionDao, Mockito.times(3)).save(isNotNull());
+        verify(firmwareDistributionMetricService, Mockito.times(3)).recordFirmware(isNotNull());
     }
 
     @Test
@@ -214,6 +215,7 @@ class ReleaseServiceTest {
         verify(missionDao, Mockito.times(1)).findById(requestReleaseDto.getMissionId());
         verify(releaseMapper, Mockito.times(1)).toEntity(requestReleaseDto, releaseStatus, mission);
         verify(releaseDao, Mockito.times(1)).findById(releaseId-1);
+        verify(firmwareDistributionMetricService, Mockito.times(3)).recordFirmware(isNotNull());
     }
 
     @Test

@@ -152,6 +152,6 @@ public class FirmwareController {
             }
         }
 
-        return new ErrorDto("Load successful");
+        return new ErrorDto("Successfully delivered");
     }
 }

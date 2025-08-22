@@ -75,7 +75,7 @@ public class MissionsController {
     public MissionDto getMissionById(
             @PathVariable @Parameter(description = "Id запрашиваемой миссии", example = "1") int missionId
     ) {
-        log.info("GetMission: id={}", missionId);
+        log.info("GetMissionById: id={}", missionId);
         return missionService.getMissionById(missionId);
     }
 

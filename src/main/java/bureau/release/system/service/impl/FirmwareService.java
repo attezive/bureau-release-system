@@ -72,7 +72,6 @@ public class FirmwareService {
 
     @Transactional(readOnly = true)
     public List<Manifest> getFirmwareVersions(@Positive long firmwareId) {
-        log.info("GetFirmwareVersions: id={}", firmwareId);
         FirmwareDto firmware = getFirmwareById(firmwareId);
         return getManifests(firmware.getOciName());
     }

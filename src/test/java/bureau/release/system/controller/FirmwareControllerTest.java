@@ -5,10 +5,7 @@ import bureau.release.system.monitoring.WebhookEventTypeMetricService;
 import bureau.release.system.service.ArtifactDownloader;
 import bureau.release.system.service.dto.FirmwareDto;
 import bureau.release.system.service.dto.FirmwareTypeDto;
-import bureau.release.system.service.dto.client.LayerAnnotations;
-import bureau.release.system.service.dto.client.Manifest;
-import bureau.release.system.service.dto.client.ManifestAnnotation;
-import bureau.release.system.service.dto.client.ManifestLayer;
+import bureau.release.system.service.dto.client.*;
 import bureau.release.system.service.impl.FirmwareService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -233,6 +230,83 @@ class FirmwareControllerTest {
     }
 
     @Test
+    @WithMockUser(authorities = "harbor")
+    void loadFirmwareWebhook_whenHarborAuthorityAndPushEvent_thenLoadAndReturnSuccess() throws Exception {
+        EventResource eventResource = new EventResource("FPGA");
+        EventRepository eventRepository = new EventRepository("proto", "proj", "proj/proto");
+        EventData eventData = new EventData(List.of(eventResource), eventRepository);
+        ArtifactWebhook payload = new ArtifactWebhook("PUSH_ARTIFACT", eventData);
+
+        FirmwareDto hookedFirmware = new FirmwareDto();
+        hookedFirmware.setName("proto");
+        hookedFirmware.setType("FPGA");
+        hookedFirmware.setOciName("proj/proto");
+
+        Mockito.when(firmwareService.hookFirmware(payload)).thenReturn(hookedFirmware);
+
+        mockMvc.perform(post("/firmware/harbor-webhook")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Successfully delivered"));
+
+        Mockito.verify(firmwareService, Mockito.times(1)).hookFirmware(payload);
+        Mockito.verify(firmwareService, Mockito.times(1)).createFirmware(hookedFirmware);
+        Mockito.verify(webhookEventTypeMetricService, Mockito.times(1)).recordEvent(payload.getType());
+    }
+
+    @Test
+    @WithMockUser(authorities = "harbor")
+    void loadFirmwareWebhook_whenHarborAuthorityAndFakeFirmware_thenLoadAndReturnSuccess() throws Exception {
+        EventResource eventResource = new EventResource("FPGA");
+        EventRepository eventRepository = new EventRepository("proto", "proj", "proj/proto");
+        EventData eventData = new EventData(List.of(eventResource), eventRepository);
+        ArtifactWebhook payload = new ArtifactWebhook("PUSH_ARTIFACT", eventData);
+
+        Mockito.when(firmwareService.hookFirmware(payload)).thenReturn(null);
+
+        mockMvc.perform(post("/firmware/harbor-webhook")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Successfully delivered"));
+
+        Mockito.verify(firmwareService, Mockito.times(1)).hookFirmware(payload);
+        Mockito.verify(firmwareService, Mockito.times(0)).createFirmware(Mockito.any());
+        Mockito.verify(webhookEventTypeMetricService, Mockito.times(1)).recordEvent(payload.getType());
+    }
+
+    @Test
+    @WithMockUser(authorities = "harbor")
+    void loadFirmwareWebhook_whenHarborAuthorityAndPullEvent_thenLoadAndReturnSuccess() throws Exception {
+        EventResource eventResource = new EventResource("FPGA");
+        EventRepository eventRepository = new EventRepository("proto", "proj", "proj/proto");
+        EventData eventData = new EventData(List.of(eventResource), eventRepository);
+        ArtifactWebhook payload = new ArtifactWebhook("PULL_ARTIFACT", eventData);
+
+        mockMvc.perform(post("/firmware/harbor-webhook")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Successfully delivered"));
+
+        Mockito.verify(firmwareService, Mockito.times(0)).hookFirmware(payload);
+        Mockito.verify(firmwareService, Mockito.times(0)).createFirmware(Mockito.any());
+        Mockito.verify(webhookEventTypeMetricService, Mockito.times(1)).recordEvent(payload.getType());
+    }
+
+    @Test
+    @WithMockUser(authorities = {"admin", "user"})
+    void loadFirmwareWebhook_whenAdminOrUserAuthority_thenNotAuthenticated() throws Exception {
+        mockMvc.perform(post("/firmware/harbor-webhook")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ArtifactWebhook())))
+                .andExpect(status().isForbidden());
+
+        Mockito.verify(webhookEventTypeMetricService, Mockito.times(0)).recordEvent(Mockito.any());
+    }
+
+    @Test
     @WithAnonymousUser
     void getAnyMethod_whenAnonymous_thenUnauthorized() throws Exception {
 
@@ -251,6 +325,9 @@ class FirmwareControllerTest {
                 .andExpect(status().isUnauthorized());
 
         mockMvc.perform(post("/firmware"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/firmware/harbor-webhook"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -271,6 +348,5 @@ class FirmwareControllerTest {
 
         mockMvc.perform(get("/firmware/1/versions"))
                 .andExpect(status().is2xxSuccessful());
-
     }
 }
