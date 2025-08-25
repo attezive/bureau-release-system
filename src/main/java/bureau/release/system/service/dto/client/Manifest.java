@@ -20,4 +20,7 @@ public class Manifest {
 
     @Schema(description = "Слои манифеста")
     List<ManifestLayer> layers;
+
+    @Schema(description = "Аннотации манифеста")
+    ManifestAnnotation annotations;
 }

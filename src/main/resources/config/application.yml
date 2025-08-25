@@ -1,11 +1,6 @@
 spring:
   application:
     name: bureau-release-system
-  security:
-    user:
-      name: user
-      password: password
-      roles: USER
   datasource:
     url: jdbc:postgresql://localhost:5432/release-system
     username: postgres
@@ -19,6 +14,12 @@ oci:
     accept-manifest-types:
       - application/vnd.oci.image.index.v1+json
       - application/vnd.oci.image.manifest.v1+json
+release:
+  system:
+    admin:
+      username: admin
+      password: admin
+      authority: admin
 feign:
   httpclient:
     enabled: true
@@ -32,3 +33,21 @@ feign:
         readTimeout: 30000
         loggerLevel: basic
         forceDecoding: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+      base-path: /monitor
+  endpoint:
+    health:
+      show-details: when_authorized
+      roles: admin, metricListener
+  info:
+    env:
+      enabled: true
+info:
+  application:
+    name: release-system
+    description: releases management system application
+    version: 0.0.1-SNAPSHOT

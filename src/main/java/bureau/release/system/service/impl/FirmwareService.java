@@ -2,13 +2,16 @@ package bureau.release.system.service.impl;
 
 import bureau.release.system.dal.FirmwareDao;
 import bureau.release.system.dal.FirmwareTypeDao;
+import bureau.release.system.dal.ReleaseDao;
 import bureau.release.system.exception.ClientException;
 import bureau.release.system.exception.ReleaseSystemException;
 import bureau.release.system.model.Firmware;
 import bureau.release.system.model.FirmwareType;
+import bureau.release.system.monitoring.FirmwareHookMetricService;
 import bureau.release.system.service.ArtifactDownloader;
 import bureau.release.system.service.dto.FirmwareDto;
 import bureau.release.system.service.dto.FirmwareTypeDto;
+import bureau.release.system.service.dto.client.ArtifactWebhook;
 import bureau.release.system.service.dto.client.Manifest;
 import bureau.release.system.service.mapping.FirmwareMapper;
 import bureau.release.system.service.mapping.FirmwareTypeMapper;
@@ -33,9 +36,11 @@ import java.util.List;
 public class FirmwareService {
     private final FirmwareDao firmwareDao;
     private final FirmwareTypeDao firmwareTypeDao;
+    private final ReleaseDao releaseDao;
     private final FirmwareMapper firmwareMapper;
     private final FirmwareTypeMapper firmwareTypeMapper;
     private final ArtifactDownloader artifactDownloader;
+    private final FirmwareHookMetricService firmwareHookMetricService;
 
     @Transactional
     public FirmwareDto createFirmware(@Valid FirmwareDto firmwareDto) {
@@ -67,16 +72,51 @@ public class FirmwareService {
 
     @Transactional(readOnly = true)
     public List<Manifest> getFirmwareVersions(@Positive long firmwareId) {
-        log.info("GetFirmwareVersions: id={}", firmwareId);
         FirmwareDto firmware = getFirmwareById(firmwareId);
+        return getManifests(firmware.getOciName());
+    }
+
+    private List<Manifest> getManifests(String ociName) {
         List<Manifest> manifests;
         try {
-            manifests = artifactDownloader.getArtifacts(firmware.getOciName());
+            manifests = artifactDownloader.getArtifacts(ociName);
         } catch (ReleaseSystemException e) {
             throw e;
         } catch (Exception e) {
             throw new ClientException(e.getMessage());
         }
         return manifests;
+    }
+
+    public FirmwareDto hookFirmware(ArtifactWebhook artifactWebhook) {
+
+        String ociName = artifactWebhook.getEventData().getRepository().getRepoFullName();
+
+        List<String> releaseOciNames = releaseDao.findReleaseOciNames();
+
+        if (releaseOciNames.contains(ociName)) {
+            log.debug("Hook is Release");
+            return null;
+        }
+
+        firmwareHookMetricService.incrementTotalFirmwareMetric();
+
+        Manifest manifest = artifactDownloader.getManifest(
+                ociName,
+                artifactWebhook.getEventData().getResources().getFirst().getTag()
+        );
+
+        String firmwareType = manifest.getAnnotations().getType();
+        if (firmwareType == null) {
+            firmwareHookMetricService.incrementFakeFirmwareMetric();
+            return null;
+        }
+
+        FirmwareDto firmwareDto = new FirmwareDto();
+        firmwareDto.setName(artifactWebhook.getEventData().getRepository().getName());
+        firmwareDto.setOciName(ociName);
+        firmwareDto.setType(firmwareType);
+
+        return firmwareDto;
     }
 }

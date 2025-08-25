@@ -1,34 +1,40 @@
 package bureau.release.system.controller;
 
+import bureau.release.system.config.SecurityWebConfig;
+import bureau.release.system.monitoring.WebhookEventTypeMetricService;
 import bureau.release.system.service.ArtifactDownloader;
 import bureau.release.system.service.dto.FirmwareDto;
 import bureau.release.system.service.dto.FirmwareTypeDto;
-import bureau.release.system.service.dto.client.LayerAnnotation;
-import bureau.release.system.service.dto.client.Manifest;
-import bureau.release.system.service.dto.client.ManifestLayer;
+import bureau.release.system.service.dto.client.*;
 import bureau.release.system.service.impl.FirmwareService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithAnonymousUser;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @WebMvcTest(FirmwareController.class)
-@AutoConfigureMockMvc(addFilters = false)
+@Import(SecurityWebConfig.class)
 class FirmwareControllerTest {
 
-    @Autowired
     private MockMvc mockMvc;
 
     @Autowired
@@ -40,12 +46,25 @@ class FirmwareControllerTest {
     @MockitoBean
     private ArtifactDownloader artifactDownloader;
 
+    @MockitoBean
+    private WebhookEventTypeMetricService webhookEventTypeMetricService;
+
+    @BeforeEach
+    void setUp(WebApplicationContext webApplicationContext) {
+        mockMvc = MockMvcBuilders
+                .webAppContextSetup(webApplicationContext)
+                .apply(springSecurity())
+                .alwaysDo(print())
+                .build();
+    }
+
     @Test
-    void getFirmware() throws Exception {
+    @WithMockUser(authorities = "admin")
+    void getFirmware_whenAdminAuthority_thenReturnFirmwareList() throws Exception {
         FirmwareDto firstFirmwareDto = new FirmwareDto(1, "First Firmware", "APPLICATION",
                 "project/repo", List.of(1L, 2L, 3L));
         FirmwareDto secondFirmwareDto = new FirmwareDto(2, "Second Firmware", "FPGA",
-                "project/repo", List.of(2L, 3L));
+                "project/repo2", List.of(2L, 3L));
         List<FirmwareDto> firmwareList = List.of(firstFirmwareDto, secondFirmwareDto);
 
         Mockito.when(firmwareService.getAllFirmware(0, 10)).thenReturn(firmwareList);
@@ -64,19 +83,19 @@ class FirmwareControllerTest {
                 .andExpect(jsonPath("$[1].id").value(2))
                 .andExpect(jsonPath("$[1].name").value("Second Firmware"))
                 .andExpect(jsonPath("$[1].type").value("FPGA"))
-                .andExpect(jsonPath("$[1].ociName").value("project/repo"))
+                .andExpect(jsonPath("$[1].ociName").value("project/repo2"))
                 .andExpect(jsonPath("$[1].hardwareIds.[0]").value(2L))
-                .andExpect(jsonPath("$[1].hardwareIds.[1]").value(3L));
+                .andExpect(jsonPath("$[1].hardwareIds.[1]").value(3L))
+                .andExpect(jsonPath("$[2]").doesNotExist());
 
         Mockito.verify(firmwareService, Mockito.times(1)).getAllFirmware(0, 10);
     }
 
     @Test
-    void getFirmwareByDefault() throws Exception {
+    @WithMockUser(authorities = "admin")
+    void getFirmwareByDefault_whenAdminAuthority_thenReturnFirmware() throws Exception {
         FirmwareDto firstFirmwareDto = new FirmwareDto(1, "First Firmware", "APPLICATION",
                 "project/repo", List.of(1L, 2L, 3L));
-        FirmwareDto secondFirmwareDto = new FirmwareDto(2, "Second Firmware", "FPGA",
-                "project/repo", List.of(2L, 3L));
         List<FirmwareDto> firmwareList = List.of(firstFirmwareDto);
 
         Mockito.when(firmwareService.getAllFirmware(0, 1)).thenReturn(firmwareList);
@@ -96,7 +115,8 @@ class FirmwareControllerTest {
     }
 
     @Test
-    void getFirmwareById() throws Exception {
+    @WithMockUser(authorities = "admin")
+    void getFirmwareById_whenAdminAuthority_thenReturnFirmware() throws Exception {
         FirmwareDto firmwareDto = new FirmwareDto(1, "Firmware", "APPLICATION",
                 "project/repo", List.of(1L, 2L, 3L));
         Mockito.when(firmwareService.getFirmwareById(1)).thenReturn(firmwareDto);
@@ -115,20 +135,18 @@ class FirmwareControllerTest {
     }
 
     @Test
-    void getFirmwareVersions() throws Exception {
-        FirmwareDto firmwareDto = new FirmwareDto(1, "Talk", "APPLICATION",
-                "project/talk", List.of(1L, 2L, 3L));
-        Mockito.when(firmwareService.getFirmwareById(1)).thenReturn(firmwareDto);
-
-        LayerAnnotation firstLayerAnnotation = new LayerAnnotation("hello world.bin");
-        LayerAnnotation secondLayerAnnotation = new LayerAnnotation("bye world.bin");
+    @WithMockUser(authorities = "admin")
+    void getFirmwareVersions_whenAdminAuthority_thenReturnVersions() throws Exception {
+        LayerAnnotations firstLayerAnnotations = new LayerAnnotations("hello world.bin");
+        LayerAnnotations secondLayerAnnotations = new LayerAnnotations("bye world.bin");
         ManifestLayer firstManifestLayer = new ManifestLayer(MediaType.APPLICATION_OCTET_STREAM.toString(),
-                "sha256digest1", 10, firstLayerAnnotation);
+                "sha256digest1", 10, firstLayerAnnotations);
         ManifestLayer secondManifestLayer = new ManifestLayer(MediaType.APPLICATION_OCTET_STREAM.toString(),
-                "sha256digest2", 8, secondLayerAnnotation);
-        Manifest manifest = new Manifest("Talk", "v1", List.of(firstManifestLayer, secondManifestLayer));
+                "sha256digest2", 8, secondLayerAnnotations);
+        Manifest manifest = new Manifest("Talk", "v1", List.of(firstManifestLayer, secondManifestLayer),
+                new ManifestAnnotation("APPLICATION", null));
 
-        Mockito.when(firmwareService.getFirmwareVersions(firmwareDto.getId())).thenReturn(List.of(manifest));
+        Mockito.when(firmwareService.getFirmwareVersions(1L)).thenReturn(List.of(manifest));
 
         mockMvc.perform(get("/firmware/1/versions"))
                 .andExpect(status().isOk())
@@ -138,13 +156,15 @@ class FirmwareControllerTest {
                 .andExpect(jsonPath("$[0].layers.[1].digest").value("sha256digest2"))
                 .andExpect(jsonPath("$[0].layers.[0].annotations.title").value("hello world.bin"))
                 .andExpect(jsonPath("$[0].layers.[1].annotations.title").value("bye world.bin"))
+                .andExpect(jsonPath("$[0].annotations.type").value("APPLICATION"))
                 .andExpect(jsonPath("$[1].name").doesNotExist());
 
-        Mockito.verify(firmwareService, Mockito.times(1)).getFirmwareVersions(firmwareDto.getId());
+        Mockito.verify(firmwareService, Mockito.times(1)).getFirmwareVersions(1L);
     }
 
     @Test
-    void createFirmware() throws Exception {
+    @WithMockUser(authorities = "admin")
+    void createFirmware_whenAdminAuthority_thenCreateAndReturnFirmware() throws Exception {
         FirmwareDto requestFirmware = new FirmwareDto();
         requestFirmware.setName("Firmware");
         requestFirmware.setType("APPLICATION");
@@ -170,7 +190,29 @@ class FirmwareControllerTest {
     }
 
     @Test
-    void getFirmwareTypes() throws Exception {
+    @WithMockUser(authorities = "user")
+    void createFirmware_whenUserAuthority_thenNotAuthenticated() throws Exception {
+        FirmwareDto requestFirmware = new FirmwareDto();
+        requestFirmware.setName("Firmware");
+        requestFirmware.setType("APPLICATION");
+        requestFirmware.setOciName("project/repo");
+
+        FirmwareDto responseFirmware = new FirmwareDto(1, "Firmware", "APPLICATION",
+                "project/repo", new ArrayList<>());
+
+        Mockito.when(firmwareService.createFirmware(requestFirmware)).thenReturn(responseFirmware);
+
+        mockMvc.perform(post("/firmware")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestFirmware)))
+                .andExpect(status().isForbidden());
+
+        Mockito.verify(firmwareService, Mockito.times(0)).createFirmware(requestFirmware);
+    }
+
+    @Test
+    @WithMockUser(authorities = "admin")
+    void getFirmwareTypes_whenAdminAuthority_thenReturnTypes() throws Exception {
         FirmwareTypeDto firstFirmwareType = new FirmwareTypeDto(1, "APPLICATION");
         FirmwareTypeDto secondFirmwareType = new FirmwareTypeDto(2, "FPGA");
         List<FirmwareTypeDto> firstFirmwareTypes = List.of(firstFirmwareType, secondFirmwareType);
@@ -185,5 +227,126 @@ class FirmwareControllerTest {
                 .andExpect(jsonPath("$[1].name").value("FPGA"));
 
         Mockito.verify(firmwareService, Mockito.times(1)).getFirmwareTypes();
+    }
+
+    @Test
+    @WithMockUser(authorities = "harbor")
+    void loadFirmwareWebhook_whenHarborAuthorityAndPushEvent_thenLoadAndReturnSuccess() throws Exception {
+        EventResource eventResource = new EventResource("FPGA");
+        EventRepository eventRepository = new EventRepository("proto", "proj", "proj/proto");
+        EventData eventData = new EventData(List.of(eventResource), eventRepository);
+        ArtifactWebhook payload = new ArtifactWebhook("PUSH_ARTIFACT", eventData);
+
+        FirmwareDto hookedFirmware = new FirmwareDto();
+        hookedFirmware.setName("proto");
+        hookedFirmware.setType("FPGA");
+        hookedFirmware.setOciName("proj/proto");
+
+        Mockito.when(firmwareService.hookFirmware(payload)).thenReturn(hookedFirmware);
+
+        mockMvc.perform(post("/firmware/harbor-webhook")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Successfully delivered"));
+
+        Mockito.verify(firmwareService, Mockito.times(1)).hookFirmware(payload);
+        Mockito.verify(firmwareService, Mockito.times(1)).createFirmware(hookedFirmware);
+        Mockito.verify(webhookEventTypeMetricService, Mockito.times(1)).recordEvent(payload.getType());
+    }
+
+    @Test
+    @WithMockUser(authorities = "harbor")
+    void loadFirmwareWebhook_whenHarborAuthorityAndFakeFirmware_thenLoadAndReturnSuccess() throws Exception {
+        EventResource eventResource = new EventResource("FPGA");
+        EventRepository eventRepository = new EventRepository("proto", "proj", "proj/proto");
+        EventData eventData = new EventData(List.of(eventResource), eventRepository);
+        ArtifactWebhook payload = new ArtifactWebhook("PUSH_ARTIFACT", eventData);
+
+        Mockito.when(firmwareService.hookFirmware(payload)).thenReturn(null);
+
+        mockMvc.perform(post("/firmware/harbor-webhook")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Successfully delivered"));
+
+        Mockito.verify(firmwareService, Mockito.times(1)).hookFirmware(payload);
+        Mockito.verify(firmwareService, Mockito.times(0)).createFirmware(Mockito.any());
+        Mockito.verify(webhookEventTypeMetricService, Mockito.times(1)).recordEvent(payload.getType());
+    }
+
+    @Test
+    @WithMockUser(authorities = "harbor")
+    void loadFirmwareWebhook_whenHarborAuthorityAndPullEvent_thenLoadAndReturnSuccess() throws Exception {
+        EventResource eventResource = new EventResource("FPGA");
+        EventRepository eventRepository = new EventRepository("proto", "proj", "proj/proto");
+        EventData eventData = new EventData(List.of(eventResource), eventRepository);
+        ArtifactWebhook payload = new ArtifactWebhook("PULL_ARTIFACT", eventData);
+
+        mockMvc.perform(post("/firmware/harbor-webhook")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Successfully delivered"));
+
+        Mockito.verify(firmwareService, Mockito.times(0)).hookFirmware(payload);
+        Mockito.verify(firmwareService, Mockito.times(0)).createFirmware(Mockito.any());
+        Mockito.verify(webhookEventTypeMetricService, Mockito.times(1)).recordEvent(payload.getType());
+    }
+
+    @Test
+    @WithMockUser(authorities = {"admin", "user"})
+    void loadFirmwareWebhook_whenAdminOrUserAuthority_thenNotAuthenticated() throws Exception {
+        mockMvc.perform(post("/firmware/harbor-webhook")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ArtifactWebhook())))
+                .andExpect(status().isForbidden());
+
+        Mockito.verify(webhookEventTypeMetricService, Mockito.times(0)).recordEvent(Mockito.any());
+    }
+
+    @Test
+    @WithAnonymousUser
+    void getAnyMethod_whenAnonymous_thenUnauthorized() throws Exception {
+
+        mockMvc.perform(get("/firmware")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/firmware"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/firmware/1"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/firmware/1/versions"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/firmware"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/firmware/harbor-webhook"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(authorities = "user")
+    void getAnyMethod_whenUser_thenIs2xxSuccessful() throws Exception {
+
+        mockMvc.perform(get("/firmware")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(get("/firmware"))
+                .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(get("/firmware/1"))
+                .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(get("/firmware/1/versions"))
+                .andExpect(status().is2xxSuccessful());
     }
 }

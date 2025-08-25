@@ -38,14 +38,14 @@ public class HardwareController {
                             content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class)))
             }
     )
-    public ResponseEntity<List<HardwareDto>> getHardware(
+    public List<HardwareDto> getHardware(
             @RequestParam(required = false) @Parameter(description = "Id миссии для фильтра девайсов") Integer missionId
     ) {
         log.info("GetHardware: missionId={}", missionId);
         if (missionId == null) {
-            return ResponseEntity.ok(hardwareService.getAllHardware());
+            return hardwareService.getAllHardware();
         }
-        return ResponseEntity.ok(hardwareService.getHardwareByMissionId(missionId));
+        return hardwareService.getHardwareByMissionId(missionId);
     }
 
     @PostMapping
@@ -82,10 +82,10 @@ public class HardwareController {
                             content = @Content(schema = @Schema(implementation = ErrorDto.class)))
             }
     )
-    public ResponseEntity<HardwareDto> getHardwareById(
+    public HardwareDto getHardwareById(
             @PathVariable @Parameter(description = "Id запрашиваемого девайса", example = "1") long hardwareId
     ) {
         log.info("GetHardwareById: id={}", hardwareId);
-        return ResponseEntity.ok(hardwareService.getHardwareById(hardwareId));
+        return hardwareService.getHardwareById(hardwareId);
     }
 }

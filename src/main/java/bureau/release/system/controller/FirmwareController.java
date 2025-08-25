@@ -1,13 +1,16 @@
 package bureau.release.system.controller;
 
+import bureau.release.system.monitoring.WebhookEventTypeMetricService;
 import bureau.release.system.service.dto.FirmwareDto;
 import bureau.release.system.service.dto.FirmwareTypeDto;
+import bureau.release.system.service.dto.client.ArtifactWebhook;
 import bureau.release.system.service.dto.client.Manifest;
 import bureau.release.system.service.dto.error.ErrorDto;
 import bureau.release.system.service.dto.error.ValidationErrorResponse;
 import bureau.release.system.service.impl.FirmwareService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Webhook;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -18,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,6 +33,7 @@ import java.util.List;
 @Tag(name = "Контроллер прошивок", description = "Управление прошивками")
 public class FirmwareController {
     private final FirmwareService firmwareService;
+    private final WebhookEventTypeMetricService webhookEventTypeMetricService;
 
     @GetMapping
     @Operation(
@@ -40,18 +45,19 @@ public class FirmwareController {
                             content = @Content(schema = @Schema(implementation = ValidationErrorResponse.class)))
             }
     )
-    public ResponseEntity<List<FirmwareDto>> getFirmware(
+    public List<FirmwareDto> getFirmware(
             @RequestParam(required = false, defaultValue = "0") @Parameter(description = "Номер страницы") int page,
             @RequestParam(required = false, defaultValue = "1") @Parameter(description = "Размер страницы") int size
     ) {
         log.info("GetFirmware: page={}, size={}", page, size);
-        return ResponseEntity.ok(firmwareService.getAllFirmware(page, size));
+        return firmwareService.getAllFirmware(page, size);
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('admin', 'harbor')")
     @Operation(
             summary = "Создание новой прошивки",
-            description = "Позволяет создать новую прошивку, исходя из переданных данных",
+            description = "Позволяет создать новую прошивку, исходя из переданных данных. (Admin rules only)",
             responses = {
                     @ApiResponse(responseCode = "201", description = "Успешное создание",
                             headers = @Header(name = HttpHeaders.LOCATION, description = "Местоположение прошивки")),
@@ -82,11 +88,11 @@ public class FirmwareController {
                             content = @Content(schema = @Schema(implementation = ErrorDto.class)))
             }
     )
-    public ResponseEntity<FirmwareDto> getFirmwareById(
+    public FirmwareDto getFirmwareById(
             @PathVariable @Parameter(description = "Id запрашиваемой прошивки", example = "1") long firmwareId
     ) {
         log.info("GetFirmwareById: id={}", firmwareId);
-        return ResponseEntity.ok(firmwareService.getFirmwareById(firmwareId));
+        return firmwareService.getFirmwareById(firmwareId);
     }
 
     @GetMapping("/{firmwareId}/versions")
@@ -101,11 +107,11 @@ public class FirmwareController {
                             content = @Content(schema = @Schema(implementation = ErrorDto.class)))
             }
     )
-    public ResponseEntity<List<Manifest>> getFirmwareVersions(
+    public List<Manifest> getFirmwareVersions(
             @PathVariable @Parameter(description = "Id запрашиваемой прошивки", example = "1") long firmwareId
     ) {
         log.info("GetFirmwareVersions: id={}", firmwareId);
-        return ResponseEntity.ok(firmwareService.getFirmwareVersions(firmwareId));
+        return firmwareService.getFirmwareVersions(firmwareId);
     }
 
     @GetMapping("/types")
@@ -113,8 +119,39 @@ public class FirmwareController {
             summary = "Получение списка типов прошивок",
             description = "Позволяет получить список типов прошивок"
     )
-    public ResponseEntity<List<FirmwareTypeDto>> getFirmwareTypes() {
+    public List<FirmwareTypeDto> getFirmwareTypes() {
         log.info("GetFirmwareTypes");
-        return ResponseEntity.ok(firmwareService.getFirmwareTypes());
+        return firmwareService.getFirmwareTypes();
+    }
+
+    @PostMapping("/harbor-webhook")
+    @PreAuthorize("hasAuthority('harbor')")
+    @Webhook(
+            name = "Вебхук прошивок с Harbor",
+            operation = @Operation(
+                    summary = "Получение нового загруженного артефакта, проверка на прошивку и загрузка",
+                    description = "Позволяет перехватить информацию о созданном артефакте, и при условии, " +
+                            "что он является прошивкой, создать на его базе прошивку в бд"
+            ))
+    public ErrorDto loadFirmwareWebhook(@RequestBody ArtifactWebhook payload) {
+        String eventType = payload.getType();
+
+        log.info("LoadFirmwareWebhook: {}", eventType);
+        log.debug("Webhook from Harbor: {}", payload);
+
+        webhookEventTypeMetricService.recordEvent(eventType);
+
+        if (eventType.equals("PUSH_ARTIFACT")) {
+            FirmwareDto firmware = firmwareService.hookFirmware(payload);
+            log.debug("Hooked firmware: {}", firmware);
+            if (firmware != null) {
+                log.info("CreateFirmware By Webhook: {}", firmware);
+                firmwareService.createFirmware(firmware);
+            } else {
+                log.info("Firmware Not Found By Webhook: {}", payload.getEventData());
+            }
+        }
+
+        return new ErrorDto("Successfully delivered");
     }
 }

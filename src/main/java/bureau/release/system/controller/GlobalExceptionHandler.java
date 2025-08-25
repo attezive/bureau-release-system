@@ -9,6 +9,7 @@ import jakarta.validation.ConstraintViolationException;
 import land.oras.exception.OrasException;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.PropertyValueException;
+import org.postgresql.util.PSQLException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -79,6 +80,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IOException.class)
     public ResponseEntity<ErrorDto> handleIOException(IOException exception) {
         log.error("IOException: {} from {}", exception.getMessage(), exception.getStackTrace()[0]);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorDto(exception.getMessage()));
+    }
+
+    @ExceptionHandler(PSQLException.class)
+    public ResponseEntity<ErrorDto> handlePSQLException(PSQLException exception) {
+        log.error("PSQLException: {} from {}", exception.getMessage(), exception.getStackTrace()[0]);
+        if (exception.getMessage().contains("unique constraint")) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorDto(exception.getMessage()));
+        }
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorDto(exception.getMessage()));
     }
 }

@@ -62,51 +62,51 @@ class MissionServiceTest {
     }
 
     @Test
-    void createMission() {
+    void createMission_createAndReturn() {
         when(hardwareDao.findById(firstHardwareId)).thenReturn(Optional.of(firstHardware));
         when(hardwareDao.findById(secondHardwareId)).thenReturn(Optional.of(secondHardware));
 
-        MissionDto missionDto = new MissionDto();
-        missionDto.setName("Mission");
-        missionDto.setHardwareIds(hardwareIdsSet);
+        MissionDto requestMissionDto = new MissionDto();
+        requestMissionDto.setName("Mission");
+        requestMissionDto.setHardwareIds(hardwareIdsSet);
 
-        when(missionDao.save(eq(missionMapper.toEntity(missionDto, hardwareSet)))).thenAnswer(inv -> {
+        when(missionDao.save(eq(missionMapper.toEntity(requestMissionDto, hardwareSet)))).thenAnswer(inv -> {
             Mission mission = inv.getArgument(0, Mission.class);
             mission.setId(missionId);
             return mission;
         });
 
-        MissionDto missionDtoResult = missionService.createMission(missionDto);
+        MissionDto receivedMissionDto = missionService.createMission(requestMissionDto);
 
-        assertEquals(hardwareIdsSet, missionDtoResult.getHardwareIds(), "Incorrect hardware ids set");
-        assertEquals(missionId, missionDtoResult.getId(), "Incorrect mission id");
-        assertEquals(missionDto.getName(), missionDtoResult.getName(), "Incorrect mission name");
+        assertEquals(hardwareIdsSet, receivedMissionDto.getHardwareIds(), "Incorrect hardware ids set");
+        assertEquals(missionId, receivedMissionDto.getId(), "Incorrect mission id");
+        assertEquals(requestMissionDto.getName(), receivedMissionDto.getName(), "Incorrect mission name");
         verify(hardwareDao, Mockito.times(1)).findById(firstHardwareId);
         verify(hardwareDao, Mockito.times(1)).findById(secondHardwareId);
         verify(missionMapper, Mockito.times(1)).toDto(any(Mission.class));
-        verify(missionMapper, Mockito.times(2)).toEntity(missionDto, hardwareSet);
+        verify(missionMapper, Mockito.times(2)).toEntity(requestMissionDto, hardwareSet);
         verify(missionDao, Mockito.times(1)).save(any(Mission.class));
     }
 
     @Test
-    void createMissionFailed() {
+    void createMission_failedByUnknowHardware_throwsEntityNotFoundException() {
         when(hardwareDao.findById(firstHardwareId)).thenReturn(Optional.empty());
 
-        MissionDto missionDto = new MissionDto();
-        missionDto.setName("Mission");
-        missionDto.setHardwareIds(hardwareIdsSet);
+        MissionDto requestMissionDto = new MissionDto();
+        requestMissionDto.setName("Mission");
+        requestMissionDto.setHardwareIds(hardwareIdsSet);
 
         EntityNotFoundException thrown = assertThrows(
                 EntityNotFoundException.class,
-                () -> missionService.createMission(missionDto));
+                () -> missionService.createMission(requestMissionDto));
 
         assertEquals("Hardware not found", thrown.getMessage(), "Incorrect message");
         verify(hardwareDao, Mockito.times(1)).findById(firstHardwareId);
-        verify(missionMapper, Mockito.times(0)).toEntity(missionDto, hardwareSet);
+        verify(missionMapper, Mockito.times(0)).toEntity(requestMissionDto, hardwareSet);
     }
 
     @Test
-    void getAllMissions() {
+    void getAllMissions_returnMissions() {
         Mission firstMission = Mission.builder().id(missionId).name("First Mission")
                 .hardwareList(hardwareSet).build();
         List<Hardware> uniqueHardwareSet = List.of(firstHardware);
@@ -116,19 +116,19 @@ class MissionServiceTest {
                 .hardwareList(uniqueHardwareSet).build();
         MissionDto secondMissionDto = missionMapper.toDto(secondMission);
 
-        List<MissionDto> missions = List.of(firstMissionDto, secondMissionDto);
+        List<MissionDto> expectedMissions = List.of(firstMissionDto, secondMissionDto);
 
         when(missionDao.findAll()).thenReturn(List.of(firstMission, secondMission));
 
-        List<MissionDto> allMissions = missionService.getAllMissions();
+        List<MissionDto> receivedMissions = missionService.getAllMissions();
 
-        assertEquals(allMissions, missions, "Incorrect equals missions list");
+        assertEquals(receivedMissions, expectedMissions, "Incorrect equals missions list");
         verify(missionDao, Mockito.times(1)).findAll();
         verify(missionMapper, Mockito.times(4)).toDto(any(Mission.class));
     }
 
     @Test
-    void getEmptyMissions() {
+    void getAllMissions_whenMissionsEmpty_thenReturnMissions() {
         when(missionDao.findAll()).thenReturn(new ArrayList<>());
 
         List<MissionDto> missions = missionService.getAllMissions();
@@ -138,21 +138,21 @@ class MissionServiceTest {
     }
 
     @Test
-    void getMissionById() {
+    void getMissionById_returnMissions() {
         Mission mission = Mission.builder().id(missionId).name("First Mission").hardwareList(hardwareSet).build();
-        MissionDto correctMissionDto = missionMapper.toDto(mission);
+        MissionDto expectedMissionDto = missionMapper.toDto(mission);
 
         when(missionDao.findById(missionId)).thenReturn(Optional.of(mission));
 
-        MissionDto missionDto = missionService.getMissionById(missionId);
+        MissionDto receivedMissionDto = missionService.getMissionById(missionId);
 
-        assertEquals(correctMissionDto, missionDto, "Incorrect mission");
+        assertEquals(expectedMissionDto, receivedMissionDto, "Incorrect mission");
         verify(missionDao, Mockito.times(1)).findById(missionId);
         verify(missionMapper, Mockito.times(2)).toDto(mission);
     }
 
     @Test
-    void getMissionByIdFailed() {
+    void getMissionById_failedByUnknownId_throwsEntityNotFoundException() {
         when(missionDao.findById(missionId)).thenReturn(Optional.empty());
 
         EntityNotFoundException thrown = assertThrows(

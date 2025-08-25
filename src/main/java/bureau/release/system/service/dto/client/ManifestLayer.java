@@ -19,6 +19,6 @@ public class ManifestLayer {
     @Schema(description = "Размер файла в байтах", example = "8")
     Integer size;
 
-    @Schema(description = "Аннотации")
-    LayerAnnotation annotations;
+    @Schema(description = "Аннотации слоя")
+    LayerAnnotations annotations;
 }
