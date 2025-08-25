@@ -89,7 +89,6 @@ public class FirmwareService {
     }
 
     public FirmwareDto hookFirmware(ArtifactWebhook artifactWebhook) {
-        firmwareHookMetricService.incrementTotalFirmwareMetric();
 
         String ociName = artifactWebhook.getEventData().getRepository().getRepoFullName();
 
@@ -99,6 +98,8 @@ public class FirmwareService {
             log.debug("Hook is Release");
             return null;
         }
+
+        firmwareHookMetricService.incrementTotalFirmwareMetric();
 
         Manifest manifest = artifactDownloader.getManifest(
                 ociName,
